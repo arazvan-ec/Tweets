@@ -1,0 +1,226 @@
+:root {
+  --bg: #15202b;
+  --bg-elev: #1e2732;
+  --bg-hover: #243340;
+  --border: #38444d;
+  --text: #e7e9ea;
+  --text-muted: #71767b;
+  --accent: #1d9bf0;
+  --green: #00ba7c;
+  --red: #f4212e;
+  --yellow: #ffd400;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+#stats {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.controls select,
+.controls input {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.controls input[type="search"] {
+  flex: 1;
+  min-width: 200px;
+}
+
+.controls select:focus,
+.controls input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.tweet {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  transition: background 0.1s;
+}
+
+.tweet:hover {
+  background: var(--bg-hover);
+}
+
+.tweet-context {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.tweet-context.retweet { color: var(--green); }
+.tweet-context.reply { color: var(--accent); }
+.tweet-context.quote { color: var(--yellow); }
+
+.tweet-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.tweet-author {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tweet-handle {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.tweet-date {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-left: auto;
+}
+
+.tweet-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 10px;
+}
+
+.tweet-text a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.tweet-text a:hover {
+  text-decoration: underline;
+}
+
+.tweet-metrics {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.tweet-metrics .metric {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tweet-metrics .metric strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.tweet-link {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.tweet-link:hover {
+  color: var(--accent);
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 60px 20px;
+}
+
+.error {
+  text-align: center;
+  color: var(--red);
+  padding: 20px;
+  background: rgba(244, 33, 46, 0.1);
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  margin: 20px;
+}
+
+footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+
+footer code {
+  background: var(--bg-elev);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.lang-badge {
+  display: inline-block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}

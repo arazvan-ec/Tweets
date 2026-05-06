@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tweets Browser</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <h1>Tweets Browser</h1>
+  <div id="stats"></div>
+</header>
+
+<div class="controls">
+  <label>
+    Snapshot:
+    <select id="snapshot-select"></select>
+  </label>
+  <label>
+    Fuente:
+    <select id="source-filter">
+      <option value="all">Todas</option>
+      <option value="timeline">Home timeline</option>
+      <option value="mine">Mis tweets</option>
+    </select>
+  </label>
+  <label>
+    Tipo:
+    <select id="type-filter">
+      <option value="all">Todos</option>
+      <option value="original">Solo originales</option>
+      <option value="retweet">Retweets</option>
+      <option value="reply">Respuestas</option>
+      <option value="quote">Citas</option>
+    </select>
+  </label>
+  <label>
+    Ordenar:
+    <select id="sort-by">
+      <option value="date_desc">Más recientes</option>
+      <option value="date_asc">Más antiguos</option>
+      <option value="likes">Más likes</option>
+      <option value="retweets">Más retweets</option>
+      <option value="replies">Más respuestas</option>
+      <option value="views">Más vistas</option>
+    </select>
+  </label>
+  <input type="search" id="search" placeholder="Buscar texto, autor...">
+</div>
+
+<main id="tweets"></main>
+
+<footer>
+  <small>Datos cargados desde <code>data/</code>. Para servir local: <code>python -m http.server</code> desde la raíz del repo.</small>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
