@@ -1,157 +1,293 @@
 #!/usr/bin/env python3
 """
-Fetches tweets from the authenticated user's home timeline and their own tweets,
-saving everything as JSON files in the data/ directory.
+Fetches tweets from X/Twitter home timeline using browser automation.
+Saves results as JSON in data/YYYY-MM-DD/.
 """
 
+import asyncio
 import json
 import os
+import re
 import sys
+import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 
-import tweepy
 from dotenv import load_dotenv
+from playwright.async_api import async_playwright, Page, BrowserContext
 
 load_dotenv()
 
-REQUIRED_ENV = [
-    "TWITTER_CONSUMER_KEY",
-    "TWITTER_CONSUMER_SECRET",
-    "TWITTER_ACCESS_TOKEN",
-    "TWITTER_ACCESS_TOKEN_SECRET",
-    "TWITTER_BEARER_TOKEN",
-]
-
 DATA_DIR = Path(__file__).parent.parent / "data"
-
-TWEET_FIELDS = [
-    "id", "text", "author_id", "created_at", "lang",
-    "public_metrics", "entities", "attachments",
-    "in_reply_to_user_id", "referenced_tweets", "possibly_sensitive",
-    "context_annotations",
-]
-
-USER_FIELDS = ["id", "name", "username", "profile_image_url", "verified", "public_metrics"]
-
-EXPANSIONS = ["author_id", "referenced_tweets.id", "referenced_tweets.id.author_id"]
+COOKIES_FILE = DATA_DIR / ".session_cookies.json"
 
 
-def check_env():
-    missing = [k for k in REQUIRED_ENV if not os.getenv(k)]
-    if missing:
-        print(f"ERROR: missing env vars: {', '.join(missing)}")
-        print("Copy .env.example to .env and fill in your credentials.")
+# ---------------------------------------------------------------------------
+# Session helpers
+# ---------------------------------------------------------------------------
+
+async def save_cookies(context: BrowserContext):
+    cookies = await context.cookies()
+    COOKIES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(COOKIES_FILE, "w") as f:
+        json.dump(cookies, f)
+
+
+async def load_cookies(context: BrowserContext) -> bool:
+    if not COOKIES_FILE.exists():
+        return False
+    with open(COOKIES_FILE) as f:
+        cookies = json.load(f)
+    await context.add_cookies(cookies)
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Login
+# ---------------------------------------------------------------------------
+
+async def login(page: Page, email: str, password: str, username: str):
+    print("Logging in to X/Twitter...")
+    await page.goto("https://x.com/i/flow/login", wait_until="domcontentloaded")
+    await page.wait_for_timeout(2000)
+
+    # Step 1: email / username
+    email_input = page.locator('input[autocomplete="username"]')
+    await email_input.wait_for(timeout=15000)
+    await email_input.fill(email)
+    await page.keyboard.press("Enter")
+    await page.wait_for_timeout(2000)
+
+    # Sometimes X asks to confirm username (unusual activity check)
+    unusual = page.locator('input[data-testid="ocfEnterTextTextInput"]')
+    try:
+        await unusual.wait_for(timeout=4000)
+        print("  Unusual activity check — entering username...")
+        await unusual.fill(username)
+        await page.keyboard.press("Enter")
+        await page.wait_for_timeout(2000)
+    except Exception:
+        pass
+
+    # Step 2: password
+    pwd_input = page.locator('input[type="password"]')
+    await pwd_input.wait_for(timeout=15000)
+    await pwd_input.fill(password)
+    await page.keyboard.press("Enter")
+    await page.wait_for_timeout(3000)
+
+    # Check for 2FA / phone verification
+    current = page.url
+    if "challenge" in current or "verify" in current or "confirm" in current:
+        print("\nERROR: X is asking for 2FA or phone verification.")
+        print("Please disable 2FA temporarily or verify the account manually, then retry.")
         sys.exit(1)
 
+    # Wait for home
+    try:
+        await page.wait_for_url("**/home", timeout=20000)
+    except Exception:
+        if "/home" not in page.url:
+            print(f"\nERROR: Login may have failed. Current URL: {page.url}")
+            sys.exit(1)
 
-def build_client():
-    return tweepy.Client(
-        bearer_token=os.getenv("TWITTER_BEARER_TOKEN"),
-        consumer_key=os.getenv("TWITTER_CONSUMER_KEY"),
-        consumer_secret=os.getenv("TWITTER_CONSUMER_SECRET"),
-        access_token=os.getenv("TWITTER_ACCESS_TOKEN"),
-        access_token_secret=os.getenv("TWITTER_ACCESS_TOKEN_SECRET"),
-        wait_on_rate_limit=True,
-    )
-
-
-def get_my_user_id(client: tweepy.Client) -> tuple[str, str]:
-    me = client.get_me(user_fields=USER_FIELDS)
-    return me.data.id, me.data.username
+    print(f"  Logged in as @{username}")
 
 
-def tweet_to_dict(tweet, users_by_id: dict) -> dict:
-    d = {
-        "id": str(tweet.id),
-        "text": tweet.text,
-        "created_at": tweet.created_at.isoformat() if tweet.created_at else None,
-        "lang": tweet.lang,
-        "author_id": str(tweet.author_id) if tweet.author_id else None,
-        "author": users_by_id.get(str(tweet.author_id)),
-        "metrics": tweet.public_metrics,
-        "entities": tweet.entities,
-        "in_reply_to_user_id": str(tweet.in_reply_to_user_id) if tweet.in_reply_to_user_id else None,
-        "referenced_tweets": [
-            {"type": r.type, "id": str(r.id)} for r in (tweet.referenced_tweets or [])
-        ],
-        "possibly_sensitive": tweet.possibly_sensitive,
-    }
-    return d
+async def ensure_logged_in(page: Page, context: BrowserContext, email: str, password: str, username: str):
+    loaded = await load_cookies(context)
+    if loaded:
+        await page.goto("https://x.com/home", wait_until="domcontentloaded")
+        await page.wait_for_timeout(3000)
+        if "/home" in page.url:
+            print(f"  Session restored for @{username}")
+            return
+        print("  Saved session expired, logging in again...")
+
+    await login(page, email, password, username)
+    await save_cookies(context)
 
 
-def extract_users(response) -> dict:
-    users_by_id = {}
-    if hasattr(response, "includes") and response.includes and "users" in response.includes:
-        for u in response.includes["users"]:
-            users_by_id[str(u.id)] = {
-                "id": str(u.id),
-                "name": u.name,
-                "username": u.username,
-            }
-    return users_by_id
+# ---------------------------------------------------------------------------
+# Tweet extraction
+# ---------------------------------------------------------------------------
+
+async def extract_tweet(article) -> dict | None:
+    try:
+        # Tweet URL and ID
+        link = article.locator('a[href*="/status/"]').first
+        href = await link.get_attribute("href", timeout=2000)
+        match = re.search(r"/status/(\d+)", href or "")
+        if not match:
+            return None
+        tweet_id = match.group(1)
+
+        # Text (can be empty for image-only tweets)
+        text = ""
+        text_el = article.locator('[data-testid="tweetText"]').first
+        try:
+            text = await text_el.inner_text(timeout=2000)
+        except Exception:
+            pass
+
+        # Author name + handle
+        author_name = ""
+        author_handle = ""
+        user_block = article.locator('[data-testid="User-Name"]').first
+        try:
+            raw = await user_block.inner_text(timeout=2000)
+            parts = [p.strip() for p in raw.split("\n") if p.strip()]
+            if parts:
+                author_name = parts[0]
+            for p in parts:
+                if p.startswith("@"):
+                    author_handle = p
+                    break
+        except Exception:
+            pass
+
+        # Timestamp
+        created_at = None
+        time_el = article.locator("time").first
+        try:
+            created_at = await time_el.get_attribute("datetime", timeout=2000)
+        except Exception:
+            pass
+
+        # Metrics
+        metrics = {}
+        for key in ["reply", "retweet", "like", "bookmark"]:
+            el = article.locator(f'[data-testid="{key}"]').first
+            try:
+                val = await el.get_attribute("aria-label", timeout=1000) or ""
+                num_match = re.search(r"([\d,]+)", val)
+                metrics[key + "s"] = num_match.group(1).replace(",", "") if num_match else "0"
+            except Exception:
+                metrics[key + "s"] = "0"
+
+        # Retweet / quote context
+        is_retweet = False
+        try:
+            ctx = article.locator('[data-testid="socialContext"]').first
+            ctx_text = await ctx.inner_text(timeout=1000)
+            is_retweet = "reposted" in ctx_text.lower() or "retweeted" in ctx_text.lower()
+        except Exception:
+            pass
+
+        # Media
+        has_media = False
+        try:
+            media = article.locator('[data-testid="tweetPhoto"], video').first
+            await media.wait_for(state="attached", timeout=500)
+            has_media = True
+        except Exception:
+            pass
+
+        return {
+            "id": tweet_id,
+            "text": text,
+            "author_name": author_name,
+            "author_handle": author_handle,
+            "created_at": created_at,
+            "url": f"https://x.com{href}",
+            "is_retweet": is_retweet,
+            "has_media": has_media,
+            "metrics": metrics,
+        }
+
+    except Exception:
+        return None
 
 
-def fetch_home_timeline(client: tweepy.Client, max_results: int = 100) -> list[dict]:
-    """Fetches recent tweets from the authenticated user's home timeline."""
-    print(f"Fetching home timeline (up to {max_results} tweets)...")
-    tweets = []
-    paginator = tweepy.Paginator(
-        client.get_home_timeline,
-        tweet_fields=TWEET_FIELDS,
-        user_fields=USER_FIELDS,
-        expansions=EXPANSIONS,
-        max_results=min(max_results, 100),
-        limit=max(1, max_results // 100),
-    )
-    for response in paginator:
-        if not response.data:
-            break
-        users_by_id = extract_users(response)
-        for tweet in response.data:
-            tweets.append(tweet_to_dict(tweet, users_by_id))
-        if len(tweets) >= max_results:
-            break
-    print(f"  -> {len(tweets)} timeline tweets fetched.")
-    return tweets
+# ---------------------------------------------------------------------------
+# Timeline scraper
+# ---------------------------------------------------------------------------
+
+async def scrape_timeline(page: Page, max_tweets: int = 100) -> list[dict]:
+    print(f"Scraping home timeline (target: {max_tweets} tweets)...")
+    await page.goto("https://x.com/home", wait_until="domcontentloaded")
+    await page.wait_for_timeout(3000)
+
+    tweets: list[dict] = []
+    seen_ids: set[str] = set()
+    no_new_rounds = 0
+
+    while len(tweets) < max_tweets and no_new_rounds < 8:
+        articles = await page.locator('article[data-testid="tweet"]').all()
+        new_this_round = 0
+
+        for article in articles:
+            tweet = await extract_tweet(article)
+            if tweet and tweet["id"] not in seen_ids:
+                seen_ids.add(tweet["id"])
+                tweets.append(tweet)
+                new_this_round += 1
+
+        if new_this_round == 0:
+            no_new_rounds += 1
+        else:
+            no_new_rounds = 0
+            print(f"  {len(tweets)} tweets collected...")
+
+        if len(tweets) < max_tweets:
+            await page.evaluate("window.scrollBy(0, window.innerHeight * 3)")
+            await page.wait_for_timeout(2500)
+
+    print(f"  -> {len(tweets)} timeline tweets extracted.")
+    return tweets[:max_tweets]
 
 
-def fetch_my_tweets(client: tweepy.Client, user_id: str, max_results: int = 100) -> list[dict]:
-    """Fetches the authenticated user's own tweets."""
-    print(f"Fetching own tweets for user {user_id} (up to {max_results})...")
-    tweets = []
-    paginator = tweepy.Paginator(
-        client.get_users_tweets,
-        id=user_id,
-        tweet_fields=TWEET_FIELDS,
-        user_fields=USER_FIELDS,
-        expansions=EXPANSIONS,
-        exclude=["retweets"],
-        max_results=min(max_results, 100),
-        limit=max(1, max_results // 100),
-    )
-    for response in paginator:
-        if not response.data:
-            break
-        users_by_id = extract_users(response)
-        for tweet in response.data:
-            tweets.append(tweet_to_dict(tweet, users_by_id))
-        if len(tweets) >= max_results:
-            break
-    print(f"  -> {len(tweets)} own tweets fetched.")
-    return tweets
+# ---------------------------------------------------------------------------
+# Own tweets scraper
+# ---------------------------------------------------------------------------
 
+async def scrape_own_tweets(page: Page, username: str, max_tweets: int = 100) -> list[dict]:
+    print(f"Scraping @{username}'s own tweets (target: {max_tweets})...")
+    await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
+    await page.wait_for_timeout(3000)
+
+    tweets: list[dict] = []
+    seen_ids: set[str] = set()
+    no_new_rounds = 0
+
+    while len(tweets) < max_tweets and no_new_rounds < 8:
+        articles = await page.locator('article[data-testid="tweet"]').all()
+        new_this_round = 0
+
+        for article in articles:
+            tweet = await extract_tweet(article)
+            if tweet and tweet["id"] not in seen_ids:
+                seen_ids.add(tweet["id"])
+                tweets.append(tweet)
+                new_this_round += 1
+
+        if new_this_round == 0:
+            no_new_rounds += 1
+        else:
+            no_new_rounds = 0
+            print(f"  {len(tweets)} tweets collected...")
+
+        if len(tweets) < max_tweets:
+            await page.evaluate("window.scrollBy(0, window.innerHeight * 3)")
+            await page.wait_for_timeout(2500)
+
+    print(f"  -> {len(tweets)} own tweets extracted.")
+    return tweets[:max_tweets]
+
+
+# ---------------------------------------------------------------------------
+# Storage
+# ---------------------------------------------------------------------------
 
 def save_snapshot(tweets: list[dict], source: str, username: str):
-    """Saves tweets to data/<date>/<source>_<timestamp>.json and updates the index."""
     now = datetime.now(timezone.utc)
     date_str = now.strftime("%Y-%m-%d")
-    timestamp_str = now.strftime("%Y%m%d_%H%M%S")
+    ts_str = now.strftime("%Y%m%d_%H%M%S")
 
     day_dir = DATA_DIR / date_str
     day_dir.mkdir(parents=True, exist_ok=True)
 
-    snapshot_file = day_dir / f"{source}_{timestamp_str}.json"
+    snapshot_file = day_dir / f"{source}_{ts_str}.json"
     snapshot = {
         "fetched_at": now.isoformat(),
         "source": source,
@@ -161,19 +297,18 @@ def save_snapshot(tweets: list[dict], source: str, username: str):
     }
     with open(snapshot_file, "w", encoding="utf-8") as f:
         json.dump(snapshot, f, ensure_ascii=False, indent=2)
-    print(f"  Saved {len(tweets)} tweets -> {snapshot_file.relative_to(DATA_DIR.parent)}")
 
-    update_index(snapshot_file.relative_to(DATA_DIR.parent), snapshot)
+    rel = snapshot_file.relative_to(DATA_DIR.parent)
+    print(f"  Saved {len(tweets)} tweets -> {rel}")
+    _update_index(rel, snapshot)
 
 
-def update_index(relative_path: Path, snapshot: dict):
-    """Appends an entry to data/index.json for easy browsing."""
+def _update_index(relative_path: Path, snapshot: dict):
     index_file = DATA_DIR / "index.json"
     index = []
     if index_file.exists():
         with open(index_file, "r", encoding="utf-8") as f:
             index = json.load(f)
-
     index.append({
         "file": str(relative_path),
         "fetched_at": snapshot["fetched_at"],
@@ -181,43 +316,68 @@ def update_index(relative_path: Path, snapshot: dict):
         "username": snapshot["username"],
         "count": snapshot["count"],
     })
-
     with open(index_file, "w", encoding="utf-8") as f:
         json.dump(index, f, ensure_ascii=False, indent=2)
 
 
-def main():
-    import argparse
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
-    parser = argparse.ArgumentParser(description="Fetch and save tweets from X / Twitter.")
+async def run(source: str, max_tweets: int):
+    email = os.getenv("TWITTER_EMAIL")
+    password = os.getenv("TWITTER_PASSWORD")
+    username = os.getenv("TWITTER_USERNAME")
+
+    if not email or not password or not username:
+        print("ERROR: set TWITTER_EMAIL, TWITTER_PASSWORD, TWITTER_USERNAME in .env")
+        sys.exit(1)
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+        )
+        context = await browser.new_context(
+            viewport={"width": 1280, "height": 900},
+            user_agent=(
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+            ),
+        )
+        page = await context.new_page()
+
+        await ensure_logged_in(page, context, email, password, username)
+
+        if source in ("timeline", "both"):
+            tweets = await scrape_timeline(page, max_tweets)
+            save_snapshot(tweets, "timeline", username)
+
+        if source in ("mine", "both"):
+            tweets = await scrape_own_tweets(page, username, max_tweets)
+            save_snapshot(tweets, "mine", username)
+
+        await browser.close()
+
+    print("\nDone. See data/ for the saved files.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Fetch tweets via browser automation.")
     parser.add_argument(
         "--source",
         choices=["timeline", "mine", "both"],
         default="both",
-        help="Which tweets to fetch: home timeline, own tweets, or both (default: both)",
+        help="Which tweets to fetch (default: both)",
     )
     parser.add_argument(
         "--max",
         type=int,
         default=100,
-        help="Max number of tweets per source (default: 100)",
+        help="Max tweets per source (default: 100)",
     )
     args = parser.parse_args()
-
-    check_env()
-    client = build_client()
-    user_id, username = get_my_user_id(client)
-    print(f"Authenticated as @{username} (id={user_id})\n")
-
-    if args.source in ("timeline", "both"):
-        timeline_tweets = fetch_home_timeline(client, max_results=args.max)
-        save_snapshot(timeline_tweets, "timeline", username)
-
-    if args.source in ("mine", "both"):
-        my_tweets = fetch_my_tweets(client, user_id, max_results=args.max)
-        save_snapshot(my_tweets, "mine", username)
-
-    print("\nDone. See data/ for the saved files.")
+    asyncio.run(run(args.source, args.max))
 
 
 if __name__ == "__main__":
