@@ -1,0 +1,3039 @@
+{
+  "fetched_at": "2026-05-06T19:52:39.021299+00:00",
+  "source": "timeline",
+  "username": "_smaily_dolgy_",
+  "count": 50,
+  "tweets": [
+    {
+      "id": "2051955309774770417",
+      "text": "RT @omarsar0: // Skills as Verifiable Artifacts //\n\nPay attention to this one, AI devs.\n\nIf you ship agent skills, your runtime is treating…",
+      "created_at": "Wed May 06 09:20:43 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "3448284313",
+        "name": "elvis",
+        "username": "omarsar0",
+        "avatar": "https://pbs.twimg.com/profile_images/939313677647282181/vZjFWtAn_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 50,
+        "replies": 0,
+        "views": "1",
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/omarsar0/status/2051955309774770417",
+      "media": [],
+      "urls": [],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "3448284313",
+          "name": "elvis",
+          "username": "omarsar0"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "2051772437520622035",
+        "text": "// Skills as Verifiable Artifacts //\n\nPay attention to this one, AI devs.\n\nIf you ship agent skills, your runtime is treating signed-and-cleared skills as trusted by default.\n\nThis paper argues a skill is untrusted code until it is verified. The runtime should enforce that default rather than infer trust from origin. Without skill verification, HITL has to fire on every irreversible call, which degrades into rubber-stamping at any non-trivial scale. With verification as a separate gated process, HITL fires only for what is unverified.\n\nSkills are now first-class deployment artifacts. We have decades of supply-chain lessons on what happens when trust is inferred from a signature. This paper is the right ask for SKILL.md before agent skill libraries become the next attack surface.\n\nPaper: https://t.co/Hrb1kZHVCG\n\nLearn to build effective AI agents in our academy: https://t.co/1e8RZKs4uX",
+        "created_at": "Tue May 05 21:14:03 +0000 2026",
+        "lang": "en",
+        "author": {
+          "id": "3448284313",
+          "name": "elvis",
+          "username": "omarsar0",
+          "avatar": "https://pbs.twimg.com/profile_images/939313677647282181/vZjFWtAn_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 223,
+          "retweets": 50,
+          "replies": 19,
+          "views": "15439",
+          "quotes": 4,
+          "bookmarks": 278
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/omarsar0/status/2051772437520622035",
+        "media": [
+          {
+            "id": "2051772434274258944",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/HHlcKIDbEAArSLz.jpg",
+            "expanded_url": "https://x.com/omarsar0/status/2051772437520622035/photo/1",
+            "display_url": "pic.x.com/LIYU73eeQB",
+            "url": "https://t.co/LIYU73eeQB",
+            "width": 1598,
+            "height": 1894
+          }
+        ],
+        "urls": [
+          {
+            "url": "https://t.co/Hrb1kZHVCG",
+            "expanded_url": "https://arxiv.org/abs/2605.00424",
+            "display_url": "arxiv.org/abs/2605.00424"
+          },
+          {
+            "url": "https://t.co/1e8RZKs4uX",
+            "expanded_url": "https://academy.dair.ai/",
+            "display_url": "academy.dair.ai"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052079874060480948",
+      "text": "I'm at Claude with Code today!\nIn the keynote, they showed how managed agents now have multi-agent orchestration, \"outcomes\" (evals+hill climbing/), and a \"dreaming\" feature - \nI'm very intrigued by the dreaming!\n\nCheck out @simonw's live blog for more:\nhttps://t.co/QUa7i0wx2h https://t.co/VLVAigRxRR",
+      "created_at": "Wed May 06 17:35:42 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "10483202",
+        "name": "Pamela Fox",
+        "username": "pamelafox",
+        "avatar": "https://pbs.twimg.com/profile_images/902000809172361216/PL9hu7Pq_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 4,
+        "retweets": 0,
+        "replies": 0,
+        "views": "185",
+        "quotes": 0,
+        "bookmarks": 1
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/pamelafox/status/2052079874060480948",
+      "media": [
+        {
+          "id": "2052079756955529216",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHpzqqQasAAyQUP.jpg",
+          "expanded_url": "https://x.com/pamelafox/status/2052079874060480948/photo/1",
+          "display_url": "pic.x.com/VLVAigRxRR",
+          "url": "https://t.co/VLVAigRxRR",
+          "width": 1584,
+          "height": 1086
+        },
+        {
+          "id": "2052079815466102784",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHpzuEObMAAyIp7.jpg",
+          "expanded_url": "https://x.com/pamelafox/status/2052079874060480948/photo/1",
+          "display_url": "pic.x.com/VLVAigRxRR",
+          "url": "https://t.co/VLVAigRxRR",
+          "width": 2134,
+          "height": 1092
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/QUa7i0wx2h",
+          "expanded_url": "https://simonwillison.net/2026/May/6/code-w-claude-2026/",
+          "display_url": "simonwillison.net/2026/May/6/cod…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "12497",
+          "name": "Simon Willison",
+          "username": "simonw"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051808871933792758",
+      "text": "Seroter Daily Reading List – May 5, 2026 (#777): Today’s links look at what happens when 1500 agents hit production at Uber, what a map of system topologies looks like, and how AI is finding 20-year-old bugs in mature software.\n\nhttps://t.co/CwNeMzkDAt",
+      "created_at": "Tue May 05 23:38:50 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "48529642",
+        "name": "Richard Seroter",
+        "username": "rseroter",
+        "avatar": "https://pbs.twimg.com/profile_images/1517719733184868354/erDRiiQZ_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 1,
+        "retweets": 0,
+        "replies": 0,
+        "views": "516",
+        "quotes": 0,
+        "bookmarks": 1
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/rseroter/status/2051808871933792758",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/CwNeMzkDAt",
+          "expanded_url": "https://seroter.com/2026/05/05/daily-reading-list-may-5-2026-777/",
+          "display_url": "seroter.com/2026/05/05/dai…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051754884295205031",
+      "text": "We're not here to chase the AI money, and we're not here to write sloppy code. \n\nWe're building the thing that comes after git. @conradirwin shares what we're doing and why: https://t.co/f05wwOKjwO",
+      "created_at": "Tue May 05 20:04:18 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1471128655699062784",
+        "name": "Zed",
+        "username": "zeddotdev",
+        "avatar": "https://pbs.twimg.com/profile_images/1980388529390632960/zV31W73I_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 728,
+        "retweets": 34,
+        "replies": 10,
+        "views": "28653",
+        "quotes": 6,
+        "bookmarks": 142
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/zeddotdev/status/2051754884295205031",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/f05wwOKjwO",
+          "expanded_url": "https://zed.dev/blog/not-building-ai-for-the-money",
+          "display_url": "zed.dev/blog/not-build…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "162814758",
+          "name": "Conrad Irwin",
+          "username": "conradirwin"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051858018112073759",
+      "text": "How to Work and Compound with AI\n\nhttps://t.co/Vanz92y42r",
+      "created_at": "Wed May 06 02:54:07 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "332011447",
+        "name": "Samuel Wong",
+        "username": "samuel_wong_",
+        "avatar": "https://pbs.twimg.com/profile_images/838260063798095873/d8XT-HH9_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 25,
+        "retweets": 4,
+        "replies": 1,
+        "views": "982",
+        "quotes": 0,
+        "bookmarks": 10
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/samuel_wong_/status/2051858018112073759",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/Vanz92y42r",
+          "expanded_url": "https://eugeneyan.com/writing/working-with-ai/",
+          "display_url": "eugeneyan.com/writing/workin…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051984885133283362",
+      "text": "Build your own AgentOS: https://t.co/qoeSPIIy1P https://t.co/uXy715mY8B",
+      "created_at": "Wed May 06 11:18:15 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "2902752025",
+        "name": "Rohit Ghumare",
+        "username": "ghumare64",
+        "avatar": "https://pbs.twimg.com/profile_images/2048350545476509696/ZeGm9Th9_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 19,
+        "retweets": 2,
+        "replies": 0,
+        "views": "2064",
+        "quotes": 0,
+        "bookmarks": 20
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": true,
+      "in_reply_to_id": null,
+      "url": "https://x.com/ghumare64/status/2051984885133283362",
+      "media": [
+        {
+          "id": "2051984878606880774",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHodYA3WEAYcViy.jpg",
+          "expanded_url": "https://x.com/ghumare64/status/2051984885133283362/photo/1",
+          "display_url": "pic.x.com/uXy715mY8B",
+          "url": "https://t.co/uXy715mY8B",
+          "width": 1540,
+          "height": 802
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/qoeSPIIy1P",
+          "expanded_url": "http://agentsos.sh",
+          "display_url": "agentsos.sh"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": {
+        "id": "2051845258192052527",
+        "text": "2026 年 Subagent 的四种管理模式\n\n@_philschmid 把\"主 agent 如何驱动其它 agents\"按主 agent 对 subagent 生命周期的控制力从弱到强排成四档。模型能力越强，能驾驭的模式越复杂。\n\n模式 1：Inline Tool —— subagent 就是一次函数调用\n主 agent 通过 call_agent 工具派一个任务，等结果返回，跟调用 read_file 没本质区别。\n\n· 同步：工具调用阻塞，结果作为 tool response 返回。\n· 异步：工具立即返回一个 agent_id，结果完成后以\"通知消息\"形式注入对话。\n\n适用：自包含任务 —— 资料检索、代码 review、文件分析、测试生成。绝大多数所谓\"多 agents\"需求其实到这里就够了。 局限：没法中途追加指令、查看进度或取消。任务理解错了，只能等结果出来才知道。 门槛：任何能调用工具的模型都行，包括小模型。\n\n模式 2：Fan-Out —— 派发后再收集\n把\"派发\"和\"收集\"拆成两个工具：spawn_agent 立即返回 ID，wait_agent 阻塞等结果。\n\n关键差异：派发与等待之间，主 agent 可以做自己的事（读文件、再派新任务）。模型自己决定什么时候 wait_agent。\n\n适用：多个互相独立、可并行的任务。 局限：如果模型一 spawn 完就立刻 wait，等于退化成模式 1。价值依赖模型能合理穿插自身工作。仍然是 fire-and-forget，无法中途纠偏。 门槛：模型要能推理\"何时该等\"。\n\n模式 3：Agent Pool —— 持久化 agent + 消息通信\nsubagent 变成长寿命、有状态的成员。工具集扩展为 spawn / send_message / wait / list / kill。主 agent 可以反复给同一个 agent 发消息，对方保留完整上下文。\n\n文中示例：研究员 agent-r 第一次被派去找资料，第二次被叫来对照刚写好的草稿做事实核查 —— 它仍记得上次找到的 5 个来源。\n\nwait_agent 按消息粒度返回，主 agent 可以根据返回内容动态调整下一步指令。\n\n适用：需要专家协作的多步工作流，主 agent 充当信息路由器。 局限：主 agent 要追踪多个 agent 的状态、决定何时发消息何时等待、记得 kill_agent 释放资源。前沿模型大概能 hold 住 2–4 个 agent。\n\n模式 4：Teams —— agents 之间直接对话\n主 agent 只负责组队、定角色、启动，然后退场。每个成员都拥有 send_message，可以直接互相寻址（层级路径、文件邮箱或 IPC）。\n\n示例中主 agent 只对 planner 说一句\"你的队友是 implementer 和 reviewer，做完汇报给我\"，之后 planner <-> implementer <-> reviewer 之间的协作完全发生在主代理上下文之外。主 agent 只在有 agent 显式向它汇报时才收到结果。\n\n适用：协调逻辑本身已经超出单个 agent 能逐步管理的复杂度的大型任务。 局限：\n· 每个成员都需要前沿模型能力，不只是主 agent。\n· 基础设施问题：环路检测（A 等 B、B 等 A）、写入冲突、关停协调。\n· 调试极难，消息链难追踪，失败会级联放大。\n\n# Philipp Schmid 的核心建议\n1. 从模式 1 开始。大多数看起来像\"需要多 agents\"的任务，靠一个 prompt 写得好的内联工具调用就能解决。\n2. 真正独立可并行才升级到模式 2。\n3. 需要跨步骤协作才上模式 3。\n4. 协调逻辑本身爆炸才考虑模式 4。\n5. 每升一级，对模型能力的要求陡增。模型不够强，就停在 1 或 2。\n6. 框架提供工具，编排由模型决定。今天要 4 个 agents 协作的任务，明天可能一个更强的单 agent 就能解决。\n\n# How Agents Manage Other Agents: Four Subagents Patterns in 2026\nhttps://t.co/IohUScw6Je",
+        "created_at": "Wed May 06 02:03:25 +0000 2026",
+        "lang": "zh",
+        "author": {
+          "id": "1727548535816724480",
+          "name": "meng shao",
+          "username": "shao__meng",
+          "avatar": "https://pbs.twimg.com/profile_images/2009826888072736772/faZAxCvC_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 212,
+          "retweets": 53,
+          "replies": 11,
+          "views": "27751",
+          "quotes": 3,
+          "bookmarks": 229
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": true,
+        "in_reply_to_id": null,
+        "url": "https://x.com/shao__meng/status/2051845258192052527",
+        "media": [
+          {
+            "id": "2051845238025789441",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/HHmeX3KaoAE_MGS.jpg",
+            "expanded_url": "https://x.com/shao__meng/status/2051845258192052527/photo/1",
+            "display_url": "pic.x.com/HT8jatshsL",
+            "url": "https://t.co/HT8jatshsL",
+            "width": 3000,
+            "height": 3000
+          }
+        ],
+        "urls": [
+          {
+            "url": "https://t.co/IohUScw6Je",
+            "expanded_url": "https://www.philschmid.de/subagent-patterns-2026",
+            "display_url": "philschmid.de/subagent-patte…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [
+          {
+            "id": "1141052916570214400",
+            "name": "Philipp Schmid",
+            "username": "_philschmid"
+          }
+        ],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051634317097414833",
+      "text": "This is a very cool article describing how they built a virtual filesystem for their agent.\n\nBut there was no code.\n\nSo, I studied the blog, burned through a lot of tokens, and implemented a POC. Here is the result:\n\nA virtual filesystem over Elasticsearch.\n\nBlog: https://t.co/cFUs4kleFR\nGitHub repo: https://t.co/qbU0kUfNfK",
+      "created_at": "Tue May 05 12:05:13 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1559465561796579328",
+        "name": "Leonie",
+        "username": "helloiamleonie",
+        "avatar": "https://pbs.twimg.com/profile_images/1559465709008297985/1Q_wkd4i_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 677,
+        "retweets": 72,
+        "replies": 15,
+        "views": "66637",
+        "quotes": 5,
+        "bookmarks": 1008
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": true,
+      "in_reply_to_id": null,
+      "url": "https://x.com/helloiamleonie/status/2051634317097414833",
+      "media": [
+        {
+          "id": "2051634312450039811",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHjeiYKWYAMTgx1.jpg",
+          "expanded_url": "https://x.com/helloiamleonie/status/2051634317097414833/photo/1",
+          "display_url": "pic.x.com/LoIFyaqBdU",
+          "url": "https://t.co/LoIFyaqBdU",
+          "width": 1200,
+          "height": 675
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/cFUs4kleFR",
+          "expanded_url": "https://leoniemonigatti.com/blog/virtual-filesystem-elasticsearch.html",
+          "display_url": "leoniemonigatti.com/blog/virtual-f…"
+        },
+        {
+          "url": "https://t.co/qbU0kUfNfK",
+          "expanded_url": "https://github.com/iamleonie/elasticsearch-fs",
+          "display_url": "github.com/iamleonie/elas…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": {
+        "id": "2039765361533637016",
+        "text": "https://t.co/H7MhLIhmuq",
+        "created_at": "Thu Apr 02 18:02:13 +0000 2026",
+        "lang": "zxx",
+        "author": {
+          "id": "1782418952104382464",
+          "name": "Dens Sumesh",
+          "username": "densumesh",
+          "avatar": "https://pbs.twimg.com/profile_images/1823803852325564416/aLyrvaLb_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 1103,
+          "retweets": 95,
+          "replies": 47,
+          "views": "913969",
+          "quotes": 59,
+          "bookmarks": 2725
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/densumesh/status/2039765361533637016",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/H7MhLIhmuq",
+            "expanded_url": "http://x.com/i/article/2039508550356238336",
+            "display_url": "x.com/i/article/2039…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052023247156527299",
+      "text": "RT @coderabbitai: Your agent writes faster than any engineer on the team.\n\nBut it also starts cold every morning.\n\nIt has no memory of your…",
+      "created_at": "Wed May 06 13:50:41 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1651729524579766272",
+        "name": "CodeRabbit",
+        "username": "coderabbitai",
+        "avatar": "https://pbs.twimg.com/profile_images/2001373914610700291/b0TRY2xZ_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 6,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/coderabbitai/status/2052023247156527299",
+      "media": [],
+      "urls": [],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "1651729524579766272",
+          "name": "CodeRabbit",
+          "username": "coderabbitai"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "2051932426029744572",
+        "text": "Your agent writes faster than any engineer on the team.\n\nBut it also starts cold every morning.\n\nIt has no memory of your architecture calls, your deprecations, or the Slack thread where you decided to kill the old auth service... until now.\n\nhttps://t.co/skX7FtOjv6 https://t.co/p96pBxvXIZ",
+        "created_at": "Wed May 06 07:49:48 +0000 2026",
+        "lang": "en",
+        "author": {
+          "id": "1651729524579766272",
+          "name": "CodeRabbit",
+          "username": "coderabbitai",
+          "avatar": "https://pbs.twimg.com/profile_images/2001373914610700291/b0TRY2xZ_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 17,
+          "retweets": 6,
+          "replies": 4,
+          "views": "1574",
+          "quotes": 0,
+          "bookmarks": 5
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/coderabbitai/status/2051932426029744572",
+        "media": [
+          {
+            "id": "2051932423815053312",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/HHntqviaQAAI5dz.jpg",
+            "expanded_url": "https://x.com/coderabbitai/status/2051932426029744572/photo/1",
+            "display_url": "pic.x.com/p96pBxvXIZ",
+            "url": "https://t.co/p96pBxvXIZ",
+            "width": 1920,
+            "height": 1090
+          }
+        ],
+        "urls": [
+          {
+            "url": "https://t.co/skX7FtOjv6",
+            "expanded_url": "https://www.coderabbit.ai/blog/policy-as-code-the-missing-layer-in-ai-assisted-development",
+            "display_url": "coderabbit.ai/blog/policy-as…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051955082372009990",
+      "text": "\"AI was supposed to replace developers. So how come there are more than ever?\", my article on @Medium\nhttps://t.co/GOaKbMPhlj",
+      "created_at": "Wed May 06 09:19:49 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1614411",
+        "name": "Enrique Dans",
+        "username": "edans",
+        "avatar": "https://pbs.twimg.com/profile_images/1448294874617352199/QDAh_Oh__normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 2,
+        "retweets": 1,
+        "replies": 1,
+        "views": "834",
+        "quotes": 0,
+        "bookmarks": 3
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/edans/status/2051955082372009990",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/GOaKbMPhlj",
+          "expanded_url": "https://medium.com/enrique-dans/ai-was-supposed-to-replace-developers-so-how-come-there-are-more-than-ever-00c104346085?sk=3301a26ffc4cc788695cd0c22909720a",
+          "display_url": "medium.com/enrique-dans/a…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "571202103",
+          "name": "Medium",
+          "username": "Medium"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051984960819777641",
+      "text": "https://t.co/Tb7H8FNjoC",
+      "created_at": "Wed May 06 11:18:33 +0000 2026",
+      "lang": "zxx",
+      "author": {
+        "id": "1994840137336066051",
+        "name": "Nainsi Dwivedi",
+        "username": "NainsiDwiv50980",
+        "avatar": "https://pbs.twimg.com/profile_images/2019646877868912643/IuwRNi4F_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 159,
+        "retweets": 47,
+        "replies": 26,
+        "views": "4211",
+        "quotes": 0,
+        "bookmarks": 110
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/NainsiDwiv50980/status/2051984960819777641",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/Tb7H8FNjoC",
+          "expanded_url": "http://x.com/i/article/2051978988273442816",
+          "display_url": "x.com/i/article/2051…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051849840402026750",
+      "text": "今天 GitHub 继续被公司级 Agent 军团霸榜！\n\n5 个星标暴增最猛的项目，专业拆解给你看！（数据来自今日实时趋势）\n\n1. Hmbown/DeepSeek-TUI\n DeepSeek 模型的终端 Coding Agent，直接在命令行里跑，Rust 实现超快超稳。\n 🔗 直达：https://t.co/MKfNdbr31D\n 以前切换 IDE 烦死了，现在直接终端里让 AI 写代码、debug、跑任务，像多了个贴身程序员。单日暴增 2434 星，本地党狂喜！\n\n🟢\n\n2. ruvnet/ruflo\n Claude 的顶级 Agent 编排平台，支持多 Agent 集群、智能工作流、RAG + 原生 Claude Code 集成，企业级架构+自学习能力。\n 🔗 直达：https://t.co/S9Up9BLKqb\n 把 Claude 从“单打独斗”升级成“特种部队”，复杂任务直接 swarm 上！单日 2432 星，Agent 基础设施天花板。\n\n🟢🟢\n\n3. virattt/dexter\n 自主金融研究 Agent，深度爬取+分析财报、市场趋势、竞品情报。\n 🔗 直达：https://t.co/3BaaH774VQ\n VC、量化、投研人的福音——以前熬夜看报表，现在 Agent 熬夜，你喝咖啡看总结。单日 659 星，持续热门！\n\n🟢🟢🟢\n\n4. msitarzewski/agency-agents\n 一站式完整 AI Agency：前端专家、Reddit 运营、创意注入、现实检查……每个 Agent 都有专长、人格和交付流程。\n 🔗 直达：https://t.co/qbrrgZ30lK\n 直接把“AI 公司”装进电脑，一个人玩转整个团队。单日 1218 星，创意+生产力双杀！\n\n🟢🟢🟢🟢\n\n5forrestchang/andrej-karpathy-skills\n 基于 Andrej Karpathy 观察提炼的 Claude.md 单文件，提升 Claude Code 编码行为，避免常见 LLM 坑。\n 🔗 直达：https://t.co/IP73B7NKSo\n 简单改个提示文件，AI 编码能力直接起飞。单日 2409 星，含金量拉满！14\n\n⚠️⚠️\n\n总结\n 2026 年，Agent 已经不是“工具”，而是基础设施+生产力核心。谁早把这些玩透，谁就在下一波 AI 革命里领先一步。从个人效率到团队/公司级应用，全覆盖！",
+      "created_at": "Wed May 06 02:21:38 +0000 2026",
+      "lang": "zh",
+      "author": {
+        "id": "1536620289123295232",
+        "name": "GitTrend",
+        "username": "GitTrend0x",
+        "avatar": "https://pbs.twimg.com/profile_images/2027224265200902144/BG6LQpAG_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 34,
+        "retweets": 7,
+        "replies": 1,
+        "views": "4830",
+        "quotes": 1,
+        "bookmarks": 29
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": true,
+      "in_reply_to_id": null,
+      "url": "https://x.com/GitTrend0x/status/2051849840402026750",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/MKfNdbr31D",
+          "expanded_url": "https://github.com/Hmbown/DeepSeek-TUI",
+          "display_url": "github.com/Hmbown/DeepSee…"
+        },
+        {
+          "url": "https://t.co/S9Up9BLKqb",
+          "expanded_url": "https://github.com/ruvnet/ruflo",
+          "display_url": "github.com/ruvnet/ruflo"
+        },
+        {
+          "url": "https://t.co/3BaaH774VQ",
+          "expanded_url": "https://github.com/virattt/dexter",
+          "display_url": "github.com/virattt/dexter"
+        },
+        {
+          "url": "https://t.co/qbrrgZ30lK",
+          "expanded_url": "https://github.com/msitarzewski/agency-agents",
+          "display_url": "github.com/msitarzewski/a…"
+        },
+        {
+          "url": "https://t.co/IP73B7NKSo",
+          "expanded_url": "https://github.com/forrestchang/andrej-karpathy-skills",
+          "display_url": "github.com/forrestchang/a…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": {
+        "id": "2051485598725411054",
+        "text": "今天 GitHub Agent 军团继续屠榜！ 🔥\n\n5 个星标暴增最狠的项目，专业拆解下：\n\n1. ruvnet/ruflo\n 🌊 Claude 领先的多 Agent 编排平台！部署智能 Agent 群、协调自主工作流、构建对话 AI 系统。企业级架构、自学习 Swarm 智能、RAG 集成 + 原生 Claude Code 支持。 以前单 Agent 玩单机，现在直接开 Swarm 军团作战！\n 🔗 直达：https://t.co/S9Up9BLKqb\n （今日 +2600+ 星，Agent 基础设施天花板！）1728\n\n2. TauricResearch/TradingAgents\n\n多 Agent LLM 金融交易框架！专攻量化、投研、自动化交易，让 AI 们互相协作分析市场、执行策略。 以前手动盯盘，现在让 Agent 军团 24h 作战，你只管收割。VC/量化/交易员狂喜！\n 🔗 直达：https://t.co/AVsxbPxi5G （今日 +2100+ 星，金融 Agent 杀手级应用）17\n\n3. browserbase/skills\n Claude Agent SDK + 原生网页浏览工具！让你的 Agent 真正“上网冲浪”、操作浏览器、完成复杂网页任务。 从此 Agent 不再纸上谈兵，直接变身网页操作高手。自动化测试、数据采集、日常 workflow 起飞！\n 🔗 直达：https://t.co/9e74nO4mTU\n （今日 +300+ 星，Agent 浏览器能力天花板）17\n\n4. Hmbown/DeepSeek-TUI\n DeepSeek 模型的终端 Coding Agent！Rust 实现，在你命令行里直接跑强大编码 Agent。\n 敲敲命令，Agent 自动写代码、调试、执行。CLI 党 + 本地优先开发者的福音！\n 🔗 直达：https://t.co/MKfNdbr31D\n （今日 +1200+ 星，终端黑客新神器）17\n\n5. msitarzewski/agency-agents \n完整 AI 代理公司一键拥有！前端 wizard、Reddit 运营 ninja、创意注入器、现实检查员……每个 Agent 都有专属人格、流程和交付物。\n 一个人 = 一整个 AI 外包团队！创业者、产品经理、内容创作者直接降维打击。\n 🔗 直达：https://t.co/qbrrgZ30lK\n （今日 +1100+ 星，Agent 公司级生产力革命）17\n\n//\n\n总结\n 2026 年 Agent 时代彻底进入“基础设施 + 垂直应用”双爆发阶段！Claude 生态、交易、金融、浏览器、终端全线开花。谁先把这些玩透，谁就站在下一波生产力/财富转移的 C 位。",
+        "created_at": "Tue May 05 02:14:16 +0000 2026",
+        "lang": "zh",
+        "author": {
+          "id": "1536620289123295232",
+          "name": "GitTrend",
+          "username": "GitTrend0x",
+          "avatar": "https://pbs.twimg.com/profile_images/2027224265200902144/BG6LQpAG_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 69,
+          "retweets": 11,
+          "replies": 4,
+          "views": "15419",
+          "quotes": 1,
+          "bookmarks": 81
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": true,
+        "in_reply_to_id": null,
+        "url": "https://x.com/GitTrend0x/status/2051485598725411054",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/S9Up9BLKqb",
+            "expanded_url": "https://github.com/ruvnet/ruflo",
+            "display_url": "github.com/ruvnet/ruflo"
+          },
+          {
+            "url": "https://t.co/AVsxbPxi5G",
+            "expanded_url": "https://github.com/TauricResearch/TradingAgents",
+            "display_url": "github.com/TauricResearch…"
+          },
+          {
+            "url": "https://t.co/9e74nO4mTU",
+            "expanded_url": "https://github.com/browserbase/skills",
+            "display_url": "github.com/browserbase/sk…"
+          },
+          {
+            "url": "https://t.co/MKfNdbr31D",
+            "expanded_url": "https://github.com/Hmbown/DeepSeek-TUI",
+            "display_url": "github.com/Hmbown/DeepSee…"
+          },
+          {
+            "url": "https://t.co/qbrrgZ30lK",
+            "expanded_url": "https://github.com/msitarzewski/agency-agents",
+            "display_url": "github.com/msitarzewski/a…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051707579785752909",
+      "text": "Must-read research of the week\n\n▪️ The Last Harness You'll Ever Build\n▪️ From Skills to Talent: Organising Heterogeneous Agents as a Real-World Company\n▪️ Recursive Multi-Agent Systems\n▪️ Synthetic Computers at Scale for Long-Horizon Productivity Simulation\n▪️ Co-Evolving Policy Distillation\n▪️ Accelerating RL Post-Training Rollouts via System-Integrated Speculative Decoding\n▪️ From Skill Text to Skill Structure: The Scheduling-Structural-Logical Representation for Agent Skills\n▪️ The Last Human-Written Paper: Agent-Native Research Artifacts\n▪️ Efficient Training on Multiple Consumer GPUs with RoundPipe\n▪️ Step-level Optimization for Efficient Computer-use Agents\n▪️ Length Value Model: Scalable Value Pretraining for Token-Level Length Modeling\n▪️ Learning while Deploying: Fleet-Scale Reinforcement Learning for Generalist Robot Policies\n\nFind the full list and the most breaking AI news of the week here: https://t.co/wuLw8scRDg",
+      "created_at": "Tue May 05 16:56:20 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1271482878958940160",
+        "name": "Ksenia_TuringPost",
+        "username": "TheTuringPost",
+        "avatar": "https://pbs.twimg.com/profile_images/2019196082727620608/iIXCFAJb_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 421,
+        "retweets": 78,
+        "replies": 9,
+        "views": "17229",
+        "quotes": 0,
+        "bookmarks": 564
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/TheTuringPost/status/2051707579785752909",
+      "media": [
+        {
+          "id": "2051707576954593280",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHkhK7tbIAAQOAS.png",
+          "expanded_url": "https://x.com/TheTuringPost/status/2051707579785752909/photo/1",
+          "display_url": "pic.x.com/59wlOq384C",
+          "url": "https://t.co/59wlOq384C",
+          "width": 671,
+          "height": 791
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/wuLw8scRDg",
+          "expanded_url": "https://www.turingpost.com/p/fod151",
+          "display_url": "turingpost.com/p/fod151"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052051689130336298",
+      "text": "RT @trevin: Created some quick docs for #CompoundEngineering plugin that explains each of the key skills: https://t.co/WebaZq88rQ",
+      "created_at": "Wed May 06 15:43:42 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "19829693",
+        "name": "Dan Shipper 📧",
+        "username": "danshipper",
+        "avatar": "https://pbs.twimg.com/profile_images/1946219091305340928/_Ef-eDlc_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 10,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/danshipper/status/2052051689130336298",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/WebaZq88rQ",
+          "expanded_url": "https://github.com/EveryInc/compound-engineering-plugin/blob/main/docs/skills/README.md",
+          "display_url": "github.com/EveryInc/compo…"
+        }
+      ],
+      "hashtags": [
+        "CompoundEngineering"
+      ],
+      "user_mentions": [
+        {
+          "id": "627363",
+          "name": "Trevin Chow",
+          "username": "trevin"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "2051736297883291826",
+        "text": "Created some quick docs for #CompoundEngineering plugin that explains each of the key skills: https://t.co/WebaZq88rQ",
+        "created_at": "Tue May 05 18:50:27 +0000 2026",
+        "lang": "en",
+        "author": {
+          "id": "627363",
+          "name": "Trevin Chow",
+          "username": "trevin",
+          "avatar": "https://pbs.twimg.com/profile_images/2049354574516178944/OKHe6Ocu_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 68,
+          "retweets": 10,
+          "replies": 2,
+          "views": "4057",
+          "quotes": 0,
+          "bookmarks": 90
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/trevin/status/2051736297883291826",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/WebaZq88rQ",
+            "expanded_url": "https://github.com/EveryInc/compound-engineering-plugin/blob/main/docs/skills/README.md",
+            "display_url": "github.com/EveryInc/compo…"
+          }
+        ],
+        "hashtags": [
+          "CompoundEngineering"
+        ],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052021924021297589",
+      "text": "Jack Dorsey just fired half his company because of AI.\n\nThen Block open-sourced the AI agent that replaced them.\n\nBlock's goose achieved approximately 4,900 stars in its first 14 days after launch, the fourth highest two-week star velocity of any open-source AI project released in April 2026.\n\nGoose is Block's internal AI coding agent, open-sourced under Apache 2.0. It is the tool that Dorsey's engineers used to replace thousands of lines of human-written code with AI-generated equivalents. Then Block decided to give it away.\n\nHere is what makes Goose different from every other AI coding agent.\nIt is not a wrapper around a single model. It is model-agnostic, you plug in Claude, GPT-5, Gemini, or any local model and it works the same way. It runs entirely on your machine. It has persistent memory across sessions. It supports MCP for custom tool integrations.\n\nAnd the design philosophy is the part that turns heads.\nGoose is built around the idea that an AI agent should be able to operate for hours or days on a single goal, not just answer one question and stop. It handles errors, retries failed steps, checks its own work, and escalates to the human only when it genuinely cannot proceed.\n\nBlock fired 5,000 people. Then gave you the tool.\nMake of that what you will.\nhttps://t.co/L9AnB3JTKU",
+      "created_at": "Wed May 06 13:45:26 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1690352207252819968",
+        "name": "Elias Al",
+        "username": "iam_elias1",
+        "avatar": "https://pbs.twimg.com/profile_images/1927313662282174464/DwgwBa3s_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 126,
+        "retweets": 45,
+        "replies": 29,
+        "views": "7162",
+        "quotes": 0,
+        "bookmarks": 109
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/iam_elias1/status/2052021924021297589",
+      "media": [
+        {
+          "id": "2052021921290809344",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHo_ELnacAAkRZS.jpg",
+          "expanded_url": "https://x.com/iam_elias1/status/2052021924021297589/photo/1",
+          "display_url": "pic.x.com/2Athxnhuq8",
+          "url": "https://t.co/2Athxnhuq8",
+          "width": 1911,
+          "height": 892
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/L9AnB3JTKU",
+          "expanded_url": "http://github.com/block/goose",
+          "display_url": "github.com/block/goose"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052063154423898603",
+      "text": "https://t.co/UB6BAxHPMJ",
+      "created_at": "Wed May 06 16:29:16 +0000 2026",
+      "lang": "zxx",
+      "author": {
+        "id": "1713062826175299584",
+        "name": "Avid",
+        "username": "Av1dlive",
+        "avatar": "https://pbs.twimg.com/profile_images/2010392290590912512/x7vtAe5W_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 115,
+        "retweets": 24,
+        "replies": 21,
+        "views": "30920",
+        "quotes": 7,
+        "bookmarks": 230
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/Av1dlive/status/2052063154423898603",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/UB6BAxHPMJ",
+          "expanded_url": "http://x.com/i/article/2051953147686658049",
+          "display_url": "x.com/i/article/2051…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052012365562954011",
+      "text": "¡Han sacado el Claude Code de DeepSeek!\nEs de código abierto y está desarrollado con Rust\n\n✓ Usa API Key o modelos locales\n✓ MCP, Skills, Tools, Memoria y más\n\n$ npm install -g deepseek-tui\n\n→ https://t.co/3XYXsq3gDs https://t.co/VgyeS3HSvW",
+      "created_at": "Wed May 06 13:07:27 +0000 2026",
+      "lang": "es",
+      "author": {
+        "id": "4882508632",
+        "name": "Miguel Ángel Durán",
+        "username": "midudev",
+        "avatar": "https://pbs.twimg.com/profile_images/1824773087323111424/-S3LUmjQ_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 1204,
+        "retweets": 139,
+        "replies": 24,
+        "views": "38606",
+        "quotes": 3,
+        "bookmarks": 830
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/midudev/status/2052012365562954011",
+      "media": [
+        {
+          "id": "2052012357367291909",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHo2XfOW4AUXksl.jpg",
+          "expanded_url": "https://x.com/midudev/status/2052012365562954011/photo/1",
+          "display_url": "pic.x.com/VgyeS3HSvW",
+          "url": "https://t.co/VgyeS3HSvW",
+          "width": 3000,
+          "height": 1771
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/3XYXsq3gDs",
+          "expanded_url": "http://github.com/Hmbown/DeepSeek-TUI",
+          "display_url": "github.com/Hmbown/DeepSee…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051972115855704133",
+      "text": "RT @mitchellh: Love this post by @antirez on developing Redis Array support. Its a great showcase of thoughtful AI usage and how AI can emp…",
+      "created_at": "Wed May 06 10:27:30 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "16542415",
+        "name": "Félix López",
+        "username": "flopezluis",
+        "avatar": "https://pbs.twimg.com/profile_images/1730637509309136896/Hpwy3Qbu_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 58,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/flopezluis/status/2051972115855704133",
+      "media": [],
+      "urls": [],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "12819682",
+          "name": "Mitchell Hashimoto",
+          "username": "mitchellh"
+        },
+        {
+          "id": "5813712",
+          "name": "antirez",
+          "username": "antirez"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "2051684321732530680",
+        "text": "Love this post by @antirez on developing Redis Array support. Its a great showcase of thoughtful AI usage and how AI can empower even the best developers while still producing high quality work. https://t.co/xc5KhcHb2P",
+        "created_at": "Tue May 05 15:23:55 +0000 2026",
+        "lang": "en",
+        "author": {
+          "id": "12819682",
+          "name": "Mitchell Hashimoto",
+          "username": "mitchellh",
+          "avatar": "https://pbs.twimg.com/profile_images/1141762999838842880/64_Y4_XB_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 832,
+          "retweets": 58,
+          "replies": 12,
+          "views": "54943",
+          "quotes": 4,
+          "bookmarks": 587
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/mitchellh/status/2051684321732530680",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/xc5KhcHb2P",
+            "expanded_url": "https://antirez.com/news/164",
+            "display_url": "antirez.com/news/164"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [
+          {
+            "id": "5813712",
+            "name": "antirez",
+            "username": "antirez"
+          }
+        ],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051865033425190994",
+      "text": "Warp 团队这是要把开源进行到底了，在 Warp、Doc 开源后，又把团队用于加速工作流的 Oz Skills 开源了 @warpdotdev 👏🏻👏🏻\n\n# Warp 团队的 15 个 Skills\nhttps://t.co/JQsHpIQvQD\n\n1. Git/GitHub 协作流（最成熟的一类）\n· create-pull-request：检查 gh CLI、分析 commits、按项目惯例生成 PR 描述。\n· ci-fix：定位失败的 GitHub Actions run → 拉日志 → 最小化修复 → 推到 ci-fix/<branch> 分支验证。强调\"最小 diff\"和不放宽 workflow 权限的安全约束。\n· github-bug-report-triage：照 issue template 评估 bug 报告的可执行性，反馈缺失信息。\n· github-issue-dedupe：用 gh search + 关键词/语义混合策略找重复 issue，可挂到 GitHub Action 里自动跑。\n\n2. 数据/分析\n· dbt-model-index：一份模板化的 dbt 模型索引（不是现成数据，而是教用户填自己的仓库结构），让 Agent 写 BigQuery SQL 前先选对表。\n· analysis-artifacts：把\"深度分析\"流程标准化——analyses/<name>/ 目录下产出 SQL、可视化、README，确保结果可复现可分享。\n\n3. Web 质量审计（直接调用 MCP 工具）\n· web-performance-audit：依赖 chrome-devtools-mcp，跑 Core Web Vitals、网络优化。\n· web-accessibility-audit：按 WCAG POUR 原则审 a11y。\n· seo-aeo-audit：技术 SEO + AI 引用优化（AEO，面向 LLM 检索时代的新概念）。\n· webapp-testing：用原生 Playwright 脚本测本地 web 应用，自带 with_server.py 管服务生命周期。\n\n4. 基础设施 / 工程规范\n· terraform-style-check：照 HashiCorp 官方风格生成/审查 Terraform。\n· mcp-builder：最厚的一个 skill——四阶段教 Agent 构建高质量 MCP server（Python FastMCP 或 TS SDK），重点强调 \"workflow tools\" 比 \"API coverage\" 更重要的设计哲学。\n\n5. 通用生产力\n· docs-update：扫描近 24h commits → 识别需要更新文档的变更 → 适配 Mintlify/Docusaurus/GitBook 等平台。\n· scheduler：本地定时提醒（明确不做云端 agent 调度，划清边界）。\n· slack-qa-investigate：只读模式深度调查代码并回答问题，强调\"先验证再回答\"。",
+      "created_at": "Wed May 06 03:22:00 +0000 2026",
+      "lang": "zh",
+      "author": {
+        "id": "1727548535816724480",
+        "name": "meng shao",
+        "username": "shao__meng",
+        "avatar": "https://pbs.twimg.com/profile_images/2009826888072736772/faZAxCvC_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 281,
+        "retweets": 44,
+        "replies": 6,
+        "views": "35087",
+        "quotes": 3,
+        "bookmarks": 408
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": true,
+      "in_reply_to_id": null,
+      "url": "https://x.com/shao__meng/status/2051865033425190994",
+      "media": [
+        {
+          "id": "2051865014936723456",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHmwXB5a4AAz-2B.jpg",
+          "expanded_url": "https://x.com/shao__meng/status/2051865033425190994/photo/1",
+          "display_url": "pic.x.com/8Y200XclPf",
+          "url": "https://t.co/8Y200XclPf",
+          "width": 3000,
+          "height": 3000
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/JQsHpIQvQD",
+          "expanded_url": "https://github.com/warpdotdev/oz-skills",
+          "display_url": "github.com/warpdotdev/oz-…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "1399860779319443459",
+          "name": "Warp",
+          "username": "warpdotdev"
+        }
+      ],
+      "quoted_tweet": {
+        "id": "2051768459101642872",
+        "text": "The Warp team uses a lot of Skills to speed up our workflow, so we open-sourced them.\n\n&gt; npx skills add warpdotdev/oz-skills\n\nIncludes Skills for SEO and accessibility auditing, documentation writing, DevOps tasks like terraform configuration, and more. https://t.co/jr5c9ex3Jd",
+        "created_at": "Tue May 05 20:58:15 +0000 2026",
+        "lang": "en",
+        "author": {
+          "id": "1399860779319443459",
+          "name": "Warp",
+          "username": "warpdotdev",
+          "avatar": "https://pbs.twimg.com/profile_images/2024836316395876352/RTG4-kZx_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 367,
+          "retweets": 28,
+          "replies": 6,
+          "views": "64910",
+          "quotes": 4,
+          "bookmarks": 356
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/warpdotdev/status/2051768459101642872",
+        "media": [
+          {
+            "id": "2051768407494918144",
+            "type": "video",
+            "media_url": "https://pbs.twimg.com/amplify_video_thumb/2051768407494918144/img/sUtMnavR7jy4tbjL.jpg",
+            "expanded_url": "https://x.com/warpdotdev/status/2051768459101642872/video/1",
+            "display_url": "pic.x.com/jr5c9ex3Jd",
+            "url": "https://t.co/jr5c9ex3Jd",
+            "width": 1584,
+            "height": 1080
+          }
+        ],
+        "urls": [],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052056258308358534",
+      "text": "Preparing for agentic AI isn’t just an AI challenge — it’s a data leadership challenge.\n\nThe teams gaining momentum aren’t doing everything at once. They're focused, modernize architecture step by step and build real discipline around data quality. https://t.co/LTXeZaS0vU https://t.co/aRADYhehgy",
+      "created_at": "Wed May 06 16:01:51 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "34042766",
+        "name": "McKinsey & Company",
+        "username": "McKinsey",
+        "avatar": "https://pbs.twimg.com/profile_images/2028119170236203008/1XYG8HCf_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 35,
+        "retweets": 8,
+        "replies": 6,
+        "views": "2927",
+        "quotes": 0,
+        "bookmarks": 28
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/McKinsey/status/2052056258308358534",
+      "media": [
+        {
+          "id": "2052056254210535427",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHpeSntWcAMhphX.jpg",
+          "expanded_url": "https://x.com/McKinsey/status/2052056258308358534/photo/1",
+          "display_url": "pic.x.com/aRADYhehgy",
+          "url": "https://t.co/aRADYhehgy",
+          "width": 1080,
+          "height": 1350
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/LTXeZaS0vU",
+          "expanded_url": "https://mck.co/4wdxs9o",
+          "display_url": "mck.co/4wdxs9o"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051589749689962949",
+      "text": "Claude Code used 3x fewer tokens with one change:\n\n- Before: 10.4M tokens · 10 errors · $9.21\n- After: 3.7M tokens · 0 errors · $2.81\n\nI used Insforge Skills + CLI as the backend context engineering layer for Claude Code (open-source and local).\n\nRepo: https://t.co/dGKwngTKav\n\n(don't forget to star 🌟)",
+      "created_at": "Tue May 05 09:08:07 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "703601972",
+        "name": "Akshay 🚀",
+        "username": "akshay_pachaar",
+        "avatar": "https://pbs.twimg.com/profile_images/1578327351544360960/YFpWSWIX_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 713,
+        "retweets": 91,
+        "replies": 33,
+        "views": "154353",
+        "quotes": 0,
+        "bookmarks": 1471
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": true,
+      "in_reply_to_id": null,
+      "url": "https://x.com/akshay_pachaar/status/2051589749689962949",
+      "media": [
+        {
+          "id": "2051582682199670784",
+          "type": "video",
+          "media_url": "https://pbs.twimg.com/amplify_video_thumb/2051582682199670784/img/FJMW27ETtN5O-iwr.jpg",
+          "expanded_url": "https://x.com/akshay_pachaar/status/2051589749689962949/video/1",
+          "display_url": "pic.x.com/T1w1obWBae",
+          "url": "https://t.co/T1w1obWBae",
+          "width": 944,
+          "height": 720
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/dGKwngTKav",
+          "expanded_url": "https://github.com/InsForge/InsForge",
+          "display_url": "github.com/InsForge/InsFo…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": {
+        "id": "2051291922409603238",
+        "text": "https://t.co/fJOJ0dRtxl",
+        "created_at": "Mon May 04 13:24:40 +0000 2026",
+        "lang": "zxx",
+        "author": {
+          "id": "703601972",
+          "name": "Akshay 🚀",
+          "username": "akshay_pachaar",
+          "avatar": "https://pbs.twimg.com/profile_images/1578327351544360960/YFpWSWIX_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 211,
+          "retweets": 23,
+          "replies": 4,
+          "views": "172828",
+          "quotes": 1,
+          "bookmarks": 552
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/akshay_pachaar/status/2051291922409603238",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/fJOJ0dRtxl",
+            "expanded_url": "http://x.com/i/article/2051275912721956866",
+            "display_url": "x.com/i/article/2051…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052028135965868203",
+      "text": "RT @JoliCode: Formation React : composants, hooks, state, routing, livrer sans dette inutile ! Programme et sessions : https://t.co/mE7DesJ…",
+      "created_at": "Wed May 06 14:10:07 +0000 2026",
+      "lang": "fr",
+      "author": {
+        "id": "354398818",
+        "name": "JoliCode",
+        "username": "JoliCode",
+        "avatar": "https://pbs.twimg.com/profile_images/877901269297508352/CqdHPR8s_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 2,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/JoliCode/status/2052028135965868203",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/mE7DesJ",
+          "expanded_url": null,
+          "display_url": "t.co/mE7DesJ"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "354398818",
+          "name": "JoliCode",
+          "username": "JoliCode"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "2051557642091524482",
+        "text": "Formation React : composants, hooks, state, routing, livrer sans dette inutile ! Programme et sessions : https://t.co/mE7DesJGT2",
+        "created_at": "Tue May 05 07:00:32 +0000 2026",
+        "lang": "fr",
+        "author": {
+          "id": "354398818",
+          "name": "JoliCode",
+          "username": "JoliCode",
+          "avatar": "https://pbs.twimg.com/profile_images/877901269297508352/CqdHPR8s_normal.jpg",
+          "verified": false,
+          "is_blue_verified": false
+        },
+        "metrics": {
+          "likes": 0,
+          "retweets": 2,
+          "replies": 0,
+          "views": "321",
+          "quotes": 0,
+          "bookmarks": 2
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/JoliCode/status/2051557642091524482",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/mE7DesJGT2",
+            "expanded_url": "https://jolicampus.com/formations/react",
+            "display_url": "jolicampus.com/formations/rea…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051999536269205520",
+      "text": "🔗 Reusing your Laravel MCP tools in the Laravel AI SDK (by @XeL)\nhttps://t.co/sm9HJbQmO6\n#laravel #tools #ai #codereuse #mcp",
+      "created_at": "Wed May 06 12:16:28 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "97178022",
+        "name": "Freek Van der Herten",
+        "username": "freekmurze",
+        "avatar": "https://pbs.twimg.com/profile_images/1956747516428337152/3Hbvojuf_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 12,
+        "retweets": 3,
+        "replies": 0,
+        "views": "1236",
+        "quotes": 0,
+        "bookmarks": 18
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/freekmurze/status/2051999536269205520",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/sm9HJbQmO6",
+          "expanded_url": "https://www.exolnet.com/en/blog/laravel-mcp-tool-to-ai-sdk",
+          "display_url": "exolnet.com/en/blog/larave…"
+        }
+      ],
+      "hashtags": [
+        "laravel",
+        "tools",
+        "ai",
+        "codereuse",
+        "mcp"
+      ],
+      "user_mentions": [
+        {
+          "id": "2906941",
+          "name": "Alexandre D’Eschambeault",
+          "username": "XeL"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052063349681332325",
+      "text": "RT @LangChain: A TLDR on Harness Profiles:\n✅ Model-specific profiles to adjust prompts, tools, and middleware.\n📦 Profiles for @OpenAI, @Ant…",
+      "created_at": "Wed May 06 16:30:02 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "2728439146",
+        "name": "Harrison Chase",
+        "username": "hwchase17",
+        "avatar": "https://pbs.twimg.com/profile_images/1569345624935485442/R67C4wCQ_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 5,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": true,
+      "in_reply_to_id": null,
+      "url": "https://x.com/hwchase17/status/2052063349681332325",
+      "media": [],
+      "urls": [],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "1589007443853340672",
+          "name": "LangChain",
+          "username": "LangChain"
+        },
+        {
+          "id": "4398626122",
+          "name": "OpenAI",
+          "username": "OpenAI"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "2052054711440662864",
+        "text": "A TLDR on Harness Profiles:\n✅ Model-specific profiles to adjust prompts, tools, and middleware.\n📦 Profiles for @OpenAI, @Anthropic, and @Google models out of the box.\n📈 A 10–20 point jump on a subset of tau2-bench over the default harness.",
+        "created_at": "Wed May 06 15:55:43 +0000 2026",
+        "lang": "en",
+        "author": {
+          "id": "1589007443853340672",
+          "name": "LangChain",
+          "username": "LangChain",
+          "avatar": "https://pbs.twimg.com/profile_images/2028336270431453184/jRRpLAdG_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 26,
+          "retweets": 5,
+          "replies": 1,
+          "views": "4174",
+          "quotes": 0,
+          "bookmarks": 13
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": true,
+        "in_reply_to_id": null,
+        "url": "https://x.com/LangChain/status/2052054711440662864",
+        "media": [],
+        "urls": [],
+        "hashtags": [],
+        "user_mentions": [
+          {
+            "id": "4398626122",
+            "name": "OpenAI",
+            "username": "OpenAI"
+          },
+          {
+            "id": "1819261",
+            "name": "Paul Jankura",
+            "username": "Anthropic"
+          },
+          {
+            "id": "20536157",
+            "name": "Google",
+            "username": "Google"
+          }
+        ],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051920176191611367",
+      "text": "Anthropic is giving away 3 Claude certifications. \n\nAll free. Here are the exact links:\n\n1. Claude 101 - 1 hour. The basics, done right.\n2. AI Fluency: Framework & Foundations - 3 hours.\n3. Intro to Cowork - 2 hours. Claude's best feature.\n\nAll 3 are on https://t.co/gn6AikWqGM. \nSign-up takes 30 seconds.\n\nTons of people buy $200 \"Claude guides\" online.\n\nVery few know Anthropic gives the real ones away.\n\nSomehow, most people blame the job market... when the problem is what's on their LinkedIn.\n\nI made a full guide to all 3 official certifications, in the right order, with my notes on each one.\n\nIt's free if you click here: https://t.co/ClEur2jjxA.\n\nForget paying. Just know which ones are real.\n\n---\n\nPS: I am not paid by Claude.\nI know I talk (a whole lot) about Claude. But I don't care about Claude. Claude doesn't pay me.\n\nI'm sharing, twice a week, how my work is speeding up (very fast) with AI.\n\nAs I'm trying to keep up, I want 𝘺𝘰𝘶 to keep up. So we move just as fast.\n\nI want to be the great filter to your AI noise. And 574,000 people read this twice a week to focus on the how.\n\nSome came because of my LinkedIn. But most readers subscribed because someone they trusted sent one of my articles to them.\n\nIf this article helped you, be that person for someone else (and share it):",
+      "created_at": "Wed May 06 07:01:07 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1269541526",
+        "name": "Ruben Hassid",
+        "username": "rubenhassid",
+        "avatar": "https://pbs.twimg.com/profile_images/1995508550387245056/3YsPtVsZ_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 183,
+        "retweets": 33,
+        "replies": 21,
+        "views": "11511",
+        "quotes": 1,
+        "bookmarks": 222
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": true,
+      "in_reply_to_id": null,
+      "url": "https://x.com/rubenhassid/status/2051920176191611367",
+      "media": [
+        {
+          "id": "2051920125906108416",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHnie6QbwAASnpR.jpg",
+          "expanded_url": "https://x.com/rubenhassid/status/2051920176191611367/photo/1",
+          "display_url": "pic.x.com/JrZ07lrtwA",
+          "url": "https://t.co/JrZ07lrtwA",
+          "width": 4096,
+          "height": 2304
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/gn6AikWqGM",
+          "expanded_url": "http://anthropic.skilljar.com",
+          "display_url": "anthropic.skilljar.com"
+        },
+        {
+          "url": "https://t.co/ClEur2jjxA",
+          "expanded_url": "http://ruben.substack.com/p/im-claude-certified",
+          "display_url": "ruben.substack.com/p/im-claude-ce…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": {
+        "id": "2051919936717726000",
+        "text": "https://t.co/Rml5pFhsVZ",
+        "created_at": "Wed May 06 07:00:10 +0000 2026",
+        "lang": "zxx",
+        "author": {
+          "id": "1269541526",
+          "name": "Ruben Hassid",
+          "username": "rubenhassid",
+          "avatar": "https://pbs.twimg.com/profile_images/1995508550387245056/3YsPtVsZ_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 67,
+          "retweets": 7,
+          "replies": 15,
+          "views": "34011",
+          "quotes": 3,
+          "bookmarks": 101
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/rubenhassid/status/2051919936717726000",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/Rml5pFhsVZ",
+            "expanded_url": "http://x.com/i/article/2051602380337369088",
+            "display_url": "x.com/i/article/2051…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052071884246716845",
+      "text": "Building Data-Heavy Systems in Clojure Without Losing Simplicity (by @flexiana)\n\nhttps://t.co/zcApnLJdo2",
+      "created_at": "Wed May 06 17:03:57 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "146070339",
+        "name": "Planet Clojure",
+        "username": "planetclojure",
+        "avatar": "https://pbs.twimg.com/profile_images/1235616906599690243/Wy3VtbLZ_normal.png",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 6,
+        "retweets": 0,
+        "replies": 0,
+        "views": "264",
+        "quotes": 0,
+        "bookmarks": 1
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/planetclojure/status/2052071884246716845",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/zcApnLJdo2",
+          "expanded_url": "https://flexiana.com/news/clojure/building-data-heavy-systems-in-clojure-without-losing-simplicity",
+          "display_url": "flexiana.com/news/clojure/b…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "735115935363792897",
+          "name": "Flexiana",
+          "username": "flexiana"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051958872156635350",
+      "text": "https://t.co/d5qzHAghMY",
+      "created_at": "Wed May 06 09:34:53 +0000 2026",
+      "lang": "zxx",
+      "author": {
+        "id": "1224538644247203844",
+        "name": "Khairallah AL-Awady",
+        "username": "eng_khairallah1",
+        "avatar": "https://pbs.twimg.com/profile_images/1888357542004162560/5D-YlH5e_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 269,
+        "retweets": 32,
+        "replies": 36,
+        "views": "177492",
+        "quotes": 9,
+        "bookmarks": 558
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/eng_khairallah1/status/2051958872156635350",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/d5qzHAghMY",
+          "expanded_url": "http://x.com/i/article/2051776076645380097",
+          "display_url": "x.com/i/article/2051…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051960698868002958",
+      "text": "GOOGLE'S CODEBASE GOT SO BIG THAT NO EXISTING BUILD TOOL COULD HANDLE IT\n\nso they built their own\n\ninternally called \"blaze\" used by every google engineer for years\nin 2015, they open-sourced it as bazel\n\nnow stripe, nvidia & twitter run their entire build pipeline on it\n\nthe secret: bazel treats builds like pure functions\nsame inputs, same outputs always\nno surprises...no rebuilding what didn't change\n\nEngineers at uber, spacex & twitter quietly switched\nno big announcements just teams tired of broken, slow builds finally finding something that worked\n\nno more rebuilding the entire codebase because one file moved\nno more \"works on my machine\"\nno more 40-minute ci runs that could've been 4\n\ntokopedia went from 55-minute ios builds to 5 minutes\nnot by buying better hardware..just by switching the tool\n\n246 releases in...still going\n\nhttps://t.co/gBqSb7GqH2",
+      "created_at": "Wed May 06 09:42:08 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1863571201060392960",
+        "name": "Vaishnavi",
+        "username": "_vmlops",
+        "avatar": "https://pbs.twimg.com/profile_images/2017673694068543493/h06eTOL0_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 12,
+        "retweets": 1,
+        "replies": 0,
+        "views": "711",
+        "quotes": 0,
+        "bookmarks": 9
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_vmlops/status/2051960698868002958",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/gBqSb7GqH2",
+          "expanded_url": "https://github.com/bazelbuild/bazel",
+          "display_url": "github.com/bazelbuild/baz…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051822988098490823",
+      "text": "been working on this for a bit based on pain points i've come across and i think it's coming together\n\nhttps://t.co/Hlw0ikJF6R\n\ns/o @dillon_mulroy better-result is pretty sick so i used that\n\nobviously some inspiration from Effect here, but going for a smaller easier api",
+      "created_at": "Wed May 06 00:34:56 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "31472652",
+        "name": "trav",
+        "username": "techsavvytravvy",
+        "avatar": "https://pbs.twimg.com/profile_images/1863018412173131776/ff-5AkgU_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 44,
+        "retweets": 2,
+        "replies": 2,
+        "views": "4720",
+        "quotes": 0,
+        "bookmarks": 14
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/techsavvytravvy/status/2051822988098490823",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/Hlw0ikJF6R",
+          "expanded_url": "https://github.com/trvswgnr/op",
+          "display_url": "github.com/trvswgnr/op"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "384666406",
+          "name": "Dillon Mulroy",
+          "username": "dillon_mulroy"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051781230228545897",
+      "text": "\"Google Cloud is finally hitting its stride, and I think part of the reason is that full stack integration.\" https://t.co/1DZeWPWgLN &lt; so much more to do (you'll keep telling us where!), but I sure like our position.",
+      "created_at": "Tue May 05 21:49:00 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "48529642",
+        "name": "Richard Seroter",
+        "username": "rseroter",
+        "avatar": "https://pbs.twimg.com/profile_images/1517719733184868354/erDRiiQZ_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 29,
+        "retweets": 3,
+        "replies": 1,
+        "views": "1609",
+        "quotes": 0,
+        "bookmarks": 4
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/rseroter/status/2051781230228545897",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/1DZeWPWgLN",
+          "expanded_url": "https://www.nextplatform.com/cloud/2026/05/02/google-is-a-full-stack-ai-player-and-is-playing-well/5219190",
+          "display_url": "nextplatform.com/cloud/2026/05/…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052027942633668888",
+      "text": "This is the Claude Code Resource Bible.\n\n54 tools.\nAgents. MCP servers. Skills. Automation.\nMost people still haven’t discovered this stack.\n\nThat’s your edge. ⚡\n\nHere’s the curated version (3 best links per section) 👇\n\n🟦 OFFICIAL\n\n• https://t.co/4o8VOOgZ2s — Claude Code docs\n• https://t.co/laPvgykw3v — official MCP servers\n• https://t.co/N6xZRiUqlv — free certification\n\n🟧 DIRECTORIES\n\n• https://t.co/TGr4PjSLLR — everything Claude Code\n• https://t.co/GcZ9KMVMtv — MCP list\n• https://t.co/q0U424jY9Z — 50+ MCPs\n\n🟨 MCP SERVERS\n\n• https://t.co/q6xQX7hnCh — browser automation\n• https://t.co/ml2Sd1SZTP — database + auth\n• https://t.co/relFondA98 — deploy apps\n\n🟩 SKILLS\n\n• https://t.co/3u23g80Wej — browser control\n• https://t.co/ZHAmHlxVRF — full dev workflow\n• https://t.co/4lDVEtnBYN — recurring tasks\n\n🟪 MULTIPLEXERS\n\n• https://t.co/NTv0UMML2b — agent terminal\n• https://t.co/SXr00Xdc2w — orchestrate agents\n• https://t.co/NDTR0qvuia — parallel dev\n\n🟥 AGENT FRAMEWORKS\n\n• https://t.co/x0hXlDlR0M — multi-agent coordination\n• https://t.co/g2Vlux0sib — agent collaboration\n• https://t.co/oDcSBofEpp — NousResearch agents\n\n⚙️ AUTOMATION\n\n• https://t.co/DqNqV1EB9v — workflows in code\n• https://t.co/QAT0L6HrNj — monitor agents\n• https://t.co/vtOYfhlZAy — self-hosted infra\n\n📚 ARTICLES\n\n• https://t.co/tYcXf1HzyT — best CLI tools\n• https://t.co/zVGTx4Vaza — top MCP servers\n• https://t.co/qBhy12KNj9 — parallel agents\n\nThis is basically the Claude Code ecosystem map.\n\nLearn it now → you're early\nIgnore it → you're late\n\nBookmark this. You'll need it",
+      "created_at": "Wed May 06 14:09:21 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1994840137336066051",
+        "name": "Nainsi Dwivedi",
+        "username": "NainsiDwiv50980",
+        "avatar": "https://pbs.twimg.com/profile_images/2019646877868912643/IuwRNi4F_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 44,
+        "retweets": 13,
+        "replies": 2,
+        "views": "1625",
+        "quotes": 0,
+        "bookmarks": 44
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/NainsiDwiv50980/status/2052027942633668888",
+      "media": [
+        {
+          "id": "2052027929409024000",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHpEh5ma8AA6_5G.jpg",
+          "expanded_url": "https://x.com/NainsiDwiv50980/status/2052027942633668888/photo/1",
+          "display_url": "pic.x.com/QULejtxQI3",
+          "url": "https://t.co/QULejtxQI3",
+          "width": 1080,
+          "height": 1340
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/4o8VOOgZ2s",
+          "expanded_url": "http://code.claude.com/docs",
+          "display_url": "code.claude.com/docs"
+        },
+        {
+          "url": "https://t.co/laPvgykw3v",
+          "expanded_url": "http://lnkd.in/eBZZGsMx",
+          "display_url": "lnkd.in/eBZZGsMx"
+        },
+        {
+          "url": "https://t.co/N6xZRiUqlv",
+          "expanded_url": "http://lnkd.in/ekUBf8a6",
+          "display_url": "lnkd.in/ekUBf8a6"
+        },
+        {
+          "url": "https://t.co/TGr4PjSLLR",
+          "expanded_url": "http://ecc.tools",
+          "display_url": "ecc.tools"
+        },
+        {
+          "url": "https://t.co/GcZ9KMVMtv",
+          "expanded_url": "http://lnkd.in/ebE2iDvV",
+          "display_url": "lnkd.in/ebE2iDvV"
+        },
+        {
+          "url": "https://t.co/q0U424jY9Z",
+          "expanded_url": "http://lnkd.in/emQbMwbG",
+          "display_url": "lnkd.in/emQbMwbG"
+        },
+        {
+          "url": "https://t.co/q6xQX7hnCh",
+          "expanded_url": "http://lnkd.in/eMC5dUqR",
+          "display_url": "lnkd.in/eMC5dUqR"
+        },
+        {
+          "url": "https://t.co/ml2Sd1SZTP",
+          "expanded_url": "http://lnkd.in/eESCpJPv",
+          "display_url": "lnkd.in/eESCpJPv"
+        },
+        {
+          "url": "https://t.co/relFondA98",
+          "expanded_url": "http://github.com/Dokploy/mcp",
+          "display_url": "github.com/Dokploy/mcp"
+        },
+        {
+          "url": "https://t.co/3u23g80Wej",
+          "expanded_url": "http://lnkd.in/eppbgRaK",
+          "display_url": "lnkd.in/eppbgRaK"
+        },
+        {
+          "url": "https://t.co/ZHAmHlxVRF",
+          "expanded_url": "http://lnkd.in/ejAPia8C",
+          "display_url": "lnkd.in/ejAPia8C"
+        },
+        {
+          "url": "https://t.co/4lDVEtnBYN",
+          "expanded_url": "http://github.com/tadaspetra/loop",
+          "display_url": "github.com/tadaspetra/loop"
+        },
+        {
+          "url": "https://t.co/NTv0UMML2b",
+          "expanded_url": "http://cmux.com",
+          "display_url": "cmux.com"
+        },
+        {
+          "url": "https://t.co/SXr00Xdc2w",
+          "expanded_url": "http://gmux.sh",
+          "display_url": "gmux.sh"
+        },
+        {
+          "url": "https://t.co/NDTR0qvuia",
+          "expanded_url": "http://github.com/coder/mux",
+          "display_url": "github.com/coder/mux"
+        },
+        {
+          "url": "https://t.co/x0hXlDlR0M",
+          "expanded_url": "http://github.com/HKUDS/ClawTeam",
+          "display_url": "github.com/HKUDS/ClawTeam"
+        },
+        {
+          "url": "https://t.co/g2Vlux0sib",
+          "expanded_url": "http://lnkd.in/eJPYijMk",
+          "display_url": "lnkd.in/eJPYijMk"
+        },
+        {
+          "url": "https://t.co/oDcSBofEpp",
+          "expanded_url": "http://lnkd.in/eMt3sS7N",
+          "display_url": "lnkd.in/eMt3sS7N"
+        },
+        {
+          "url": "https://t.co/DqNqV1EB9v",
+          "expanded_url": "http://lnkd.in/e9sarX3R",
+          "display_url": "lnkd.in/e9sarX3R"
+        },
+        {
+          "url": "https://t.co/QAT0L6HrNj",
+          "expanded_url": "http://openlogs.dev",
+          "display_url": "openlogs.dev"
+        },
+        {
+          "url": "https://t.co/vtOYfhlZAy",
+          "expanded_url": "http://lnkd.in/eDKBPrPU",
+          "display_url": "lnkd.in/eDKBPrPU"
+        },
+        {
+          "url": "https://t.co/tYcXf1HzyT",
+          "expanded_url": "http://lnkd.in/e9gfhHhm",
+          "display_url": "lnkd.in/e9gfhHhm"
+        },
+        {
+          "url": "https://t.co/zVGTx4Vaza",
+          "expanded_url": "http://lnkd.in/ePCzNw5w",
+          "display_url": "lnkd.in/ePCzNw5w"
+        },
+        {
+          "url": "https://t.co/qBhy12KNj9",
+          "expanded_url": "http://lnkd.in/eAJCnpbD",
+          "display_url": "lnkd.in/eAJCnpbD"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052078477105303603",
+      "text": "In my latest newsletter I discuss how AI is changing our relationship with open source. From security to licensing to maintenance, there are a lot more unknowns than their are knowns at this point.\n\nhttps://t.co/7txYAhKhlM",
+      "created_at": "Wed May 06 17:30:09 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "17633960",
+        "name": "Nicholas C. Zakas",
+        "username": "slicknet",
+        "avatar": "https://pbs.twimg.com/profile_images/1316939132392763394/sX89bluY_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 1,
+        "retweets": 0,
+        "replies": 2,
+        "views": "309",
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/slicknet/status/2052078477105303603",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/7txYAhKhlM",
+          "expanded_url": "https://newsletter.humanwhocodes.com/posts/open-source-in-the-age-of-ai",
+          "display_url": "newsletter.humanwhocodes.com/posts/open-sou…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051769123625959493",
+      "text": "JetBrains uses IDE-native code insight to make AI agents better at large codebases\n\nWhy burn time and tokens on grep when the IDE has semantic search, navigation, and refactorings?\n\nInteresting: Codex seems to use these tools much better than Claude Code\n\nhttps://t.co/gNez8KDItZ",
+      "created_at": "Tue May 05 21:00:53 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "86050748",
+        "name": "Kirill Skrygan",
+        "username": "kskrygan",
+        "avatar": "https://pbs.twimg.com/profile_images/1478755094325862405/5htij4ZH_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 143,
+        "retweets": 13,
+        "replies": 11,
+        "views": "13640",
+        "quotes": 5,
+        "bookmarks": 65
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/kskrygan/status/2051769123625959493",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/gNez8KDItZ",
+          "expanded_url": "https://blog.jetbrains.com/ai/2026/05/what-happens-when-you-give-agents-ide-native-seach-tools/",
+          "display_url": "blog.jetbrains.com/ai/2026/05/wha…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051967150894772609",
+      "text": "In 14 minutes, this Anthropic engineer who created MCPs \n\nwill teach you more about building them right than \n\nmost developers figure out on their own  in months.  \n\nbookmark this today\n\nthis guide is literally the exact 2026 playbook to build and sell mcps to make $10k/mo https://t.co/FpJBqosabb",
+      "created_at": "Wed May 06 10:07:47 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1713062826175299584",
+        "name": "Avid",
+        "username": "Av1dlive",
+        "avatar": "https://pbs.twimg.com/profile_images/2010392290590912512/x7vtAe5W_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 462,
+        "retweets": 60,
+        "replies": 22,
+        "views": "62587",
+        "quotes": 1,
+        "bookmarks": 826
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": true,
+      "in_reply_to_id": null,
+      "url": "https://x.com/Av1dlive/status/2051967150894772609",
+      "media": [
+        {
+          "id": "2051965955455291392",
+          "type": "video",
+          "media_url": "https://pbs.twimg.com/amplify_video_thumb/2051965955455291392/img/0Zu9SocSn1wOzBwI.jpg",
+          "expanded_url": "https://x.com/Av1dlive/status/2051967150894772609/video/1",
+          "display_url": "pic.x.com/FpJBqosabb",
+          "url": "https://t.co/FpJBqosabb",
+          "width": 1920,
+          "height": 1080
+        }
+      ],
+      "urls": [],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": {
+        "id": "2051958872156635350",
+        "text": "https://t.co/d5qzHAghMY",
+        "created_at": "Wed May 06 09:34:53 +0000 2026",
+        "lang": "zxx",
+        "author": {
+          "id": "1224538644247203844",
+          "name": "Khairallah AL-Awady",
+          "username": "eng_khairallah1",
+          "avatar": "https://pbs.twimg.com/profile_images/1888357542004162560/5D-YlH5e_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 269,
+          "retweets": 32,
+          "replies": 36,
+          "views": "177649",
+          "quotes": 9,
+          "bookmarks": 558
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/eng_khairallah1/status/2051958872156635350",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/d5qzHAghMY",
+            "expanded_url": "http://x.com/i/article/2051776076645380097",
+            "display_url": "x.com/i/article/2051…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052033032358367722",
+      "text": "🌟 Symfony 8.1.0-BETA1 released\n➡️ https://t.co/co2L9wj4D5",
+      "created_at": "Wed May 06 14:29:34 +0000 2026",
+      "lang": "und",
+      "author": {
+        "id": "11945072",
+        "name": "Symfony",
+        "username": "symfony",
+        "avatar": "https://pbs.twimg.com/profile_images/1450222519/logosf_positif_03_icon_normal.png",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 5,
+        "retweets": 0,
+        "replies": 0,
+        "views": "724",
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/symfony/status/2052033032358367722",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/co2L9wj4D5",
+          "expanded_url": "https://symfony.com/blog/symfony-8-1-0-beta1-released",
+          "display_url": "symfony.com/blog/symfony-8…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052051951286665528",
+      "text": "https://t.co/lyOpx0IvqK",
+      "created_at": "Wed May 06 15:44:45 +0000 2026",
+      "lang": "zxx",
+      "author": {
+        "id": "1221534581045620736",
+        "name": "PostHog",
+        "username": "posthog",
+        "avatar": "https://pbs.twimg.com/profile_images/2051741479433822210/YboW6yWw_normal.png",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 60,
+        "retweets": 9,
+        "replies": 4,
+        "views": "6265",
+        "quotes": 1,
+        "bookmarks": 70
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/posthog/status/2052051951286665528",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/lyOpx0IvqK",
+          "expanded_url": "http://x.com/i/article/2052009415859994624",
+          "display_url": "x.com/i/article/2052…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051840657384460530",
+      "text": "Agents, Architecture, &amp; Amnesia: Becoming AI-Native without Losing our Minds https://t.co/Sx1RupVEGF by @TracyBannon",
+      "created_at": "Wed May 06 01:45:08 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "14073560",
+        "name": "InfoQ",
+        "username": "InfoQ",
+        "avatar": "https://pbs.twimg.com/profile_images/1514212711797825541/jlGPZt1D_normal.png",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 2,
+        "retweets": 1,
+        "replies": 0,
+        "views": "658",
+        "quotes": 1,
+        "bookmarks": 4
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/InfoQ/status/2051840657384460530",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/Sx1RupVEGF",
+          "expanded_url": "http://bit.ly/4umXdSY",
+          "display_url": "bit.ly/4umXdSY"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "17001434",
+          "name": "TracyBannon",
+          "username": "TracyBannon"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051949543886033245",
+      "text": "Trending repository of the day 📈\n\nDeepSeek-TUI\n\nCoding agent for DeepSeek models that runs in your terminal\n\nLast 24h: 2,434 ⭐\nTotal: 10,493 ⭐️\nhttps://t.co/kqjzfaUFAj",
+      "created_at": "Wed May 06 08:57:49 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1162359127294861314",
+        "name": "Trending GitHub Repositories",
+        "username": "trending_repos",
+        "avatar": "https://pbs.twimg.com/profile_images/1166400472665808897/wn7Cs5GU_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 22,
+        "retweets": 2,
+        "replies": 1,
+        "views": "1254",
+        "quotes": 0,
+        "bookmarks": 14
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/trending_repos/status/2051949543886033245",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/kqjzfaUFAj",
+          "expanded_url": "https://github.com/Hmbown/DeepSeek-TUI",
+          "display_url": "github.com/Hmbown/DeepSee…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051996033345851583",
+      "text": "AI has made writing code faster, but reviewing it is becoming the new bottleneck.\n\nIn this detailed handbook, Qudrat teaches you how to unblock PR reviews by moving team knowledge into files like AGENTS.md so AI reviewers understand context.\n\nYou’ll also learn how to build a codebase-aware reviewer that catches issues before humans step in.\n\nhttps://t.co/dgNC2CaRIM",
+      "created_at": "Wed May 06 12:02:33 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1668100142",
+        "name": "freeCodeCamp.org",
+        "username": "freeCodeCamp",
+        "avatar": "https://pbs.twimg.com/profile_images/1276770212927410176/qTgTIejk_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 90,
+        "retweets": 12,
+        "replies": 1,
+        "views": "4489",
+        "quotes": 0,
+        "bookmarks": 51
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/freeCodeCamp/status/2051996033345851583",
+      "media": [
+        {
+          "id": "2051996030879649798",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHonhKUX0AY41sT.jpg",
+          "expanded_url": "https://x.com/freeCodeCamp/status/2051996033345851583/photo/1",
+          "display_url": "pic.x.com/l5kA7gc2uv",
+          "url": "https://t.co/l5kA7gc2uv",
+          "width": 1920,
+          "height": 1080
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/dgNC2CaRIM",
+          "expanded_url": "https://www.freecodecamp.org/news/how-to-unblock-ai-pr-review-bottleneck-handbook/",
+          "display_url": "freecodecamp.org/news/how-to-un…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051429737764102258",
+      "text": "An awesome regex visualization tool\n\nhttps://t.co/zrGa64iMHJ https://t.co/UNxpI8HU5r",
+      "created_at": "Mon May 04 22:32:17 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "112868236",
+        "name": "Vivek Galatage",
+        "username": "vivekgalatage",
+        "avatar": "https://pbs.twimg.com/profile_images/1859170173699424256/2gEV7Jl6_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 4288,
+        "retweets": 526,
+        "replies": 30,
+        "views": "205851",
+        "quotes": 12,
+        "bookmarks": 3723
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/vivekgalatage/status/2051429737764102258",
+      "media": [
+        {
+          "id": "2051429419244482560",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHgkMBfacAA6S-N.jpg",
+          "expanded_url": "https://x.com/vivekgalatage/status/2051429737764102258/photo/1",
+          "display_url": "pic.x.com/UNxpI8HU5r",
+          "url": "https://t.co/UNxpI8HU5r",
+          "width": 3012,
+          "height": 2410
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/zrGa64iMHJ",
+          "expanded_url": "https://regex-vis.com",
+          "display_url": "regex-vis.com"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052025703999131818",
+      "text": "https://t.co/gwPYgHlSxI",
+      "created_at": "Wed May 06 14:00:27 +0000 2026",
+      "lang": "zxx",
+      "author": {
+        "id": "114783808",
+        "name": "AlphaSignal AI",
+        "username": "AlphaSignalAI",
+        "avatar": "https://pbs.twimg.com/profile_images/2014100845189529600/Ff1Xc28-_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 31,
+        "retweets": 2,
+        "replies": 2,
+        "views": "1320",
+        "quotes": 0,
+        "bookmarks": 51
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/AlphaSignalAI/status/2052025703999131818",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/gwPYgHlSxI",
+          "expanded_url": "http://x.com/i/article/2051913146223505408",
+          "display_url": "x.com/i/article/2051…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051922332403253356",
+      "text": "🧱 After years of fixing mature Rails applications, Arkency says the modern Rails Way has shifted from classic MVC ideals toward Active Record models acting as workflow engines. #Rails https://t.co/B5uXbtIVh2",
+      "created_at": "Wed May 06 07:09:41 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "2299235840",
+        "name": "James Hibbard",
+        "username": "jchibbard",
+        "avatar": "https://pbs.twimg.com/profile_images/1098898659058638849/jmjbZig7_normal.png",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 15,
+        "retweets": 3,
+        "replies": 0,
+        "views": "822",
+        "quotes": 0,
+        "bookmarks": 13
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/jchibbard/status/2051922332403253356",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/B5uXbtIVh2",
+          "expanded_url": "https://blog.arkency.com/the-rails-way-in-2026/",
+          "display_url": "blog.arkency.com/the-rails-way-…"
+        }
+      ],
+      "hashtags": [
+        "Rails"
+      ],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052093277864612168",
+      "text": "Obsidian vault for Claude Code memory\n\nhttps://t.co/sdrDs7mJiE https://t.co/PNRnLQw3Nw",
+      "created_at": "Wed May 06 18:28:58 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1326180756310331399",
+        "name": "Tom Dörr",
+        "username": "tom_doerr",
+        "avatar": "https://pbs.twimg.com/profile_images/1905090420142379008/Ydq5So7B_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 20,
+        "retweets": 4,
+        "replies": 0,
+        "views": "1601",
+        "quotes": 1,
+        "bookmarks": 38
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/tom_doerr/status/2052093277864612168",
+      "media": [
+        {
+          "id": "2052093275180273667",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHp_9hkWkAM5Hd4.png",
+          "expanded_url": "https://x.com/tom_doerr/status/2052093277864612168/photo/1",
+          "display_url": "pic.x.com/PNRnLQw3Nw",
+          "url": "https://t.co/PNRnLQw3Nw",
+          "width": 522,
+          "height": 719
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/sdrDs7mJiE",
+          "expanded_url": "https://github.com/breferrari/obsidian-mind",
+          "display_url": "github.com/breferrari/obs…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051856132621164852",
+      "text": "Deepsec is a security harness for finding vulnerabilities in your codebase powered by coding agents https://t.co/CbY7Kia6w5",
+      "created_at": "Wed May 06 02:46:38 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "128484298",
+        "name": "Nicolas Krassas",
+        "username": "Dinosn",
+        "avatar": "https://pbs.twimg.com/profile_images/1932450033233747968/nu7wcCd5_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 86,
+        "retweets": 10,
+        "replies": 1,
+        "views": "4106",
+        "quotes": 0,
+        "bookmarks": 62
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/Dinosn/status/2051856132621164852",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/CbY7Kia6w5",
+          "expanded_url": "https://github.com/vercel-labs/deepsec",
+          "display_url": "github.com/vercel-labs/de…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051995408939774030",
+      "text": "Ship AI with Laravel: Search Entire PDFs with Zero Search Logic https://t.co/Cz1oiAOHUp posted by @harrisrafto",
+      "created_at": "Wed May 06 12:00:04 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "509273832",
+        "name": "Laravel News",
+        "username": "laravelnews",
+        "avatar": "https://pbs.twimg.com/profile_images/1359866716222861317/coQ-RmRS_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 16,
+        "retweets": 4,
+        "replies": 1,
+        "views": "1965",
+        "quotes": 1,
+        "bookmarks": 9
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/laravelnews/status/2051995408939774030",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/Cz1oiAOHUp",
+          "expanded_url": "https://laravel-news.com/ship-ai-with-laravel-search-entire-pdfs-with-zero-search-logic",
+          "display_url": "laravel-news.com/ship-ai-with-l…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "81252221",
+          "name": "Harris Raftopoulos",
+          "username": "harrisrafto"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051708710859501807",
+      "text": "https://t.co/73QzZkZrUh",
+      "created_at": "Tue May 05 17:00:50 +0000 2026",
+      "lang": "zxx",
+      "author": {
+        "id": "2728439146",
+        "name": "Harrison Chase",
+        "username": "hwchase17",
+        "avatar": "https://pbs.twimg.com/profile_images/1569345624935485442/R67C4wCQ_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 196,
+        "retweets": 42,
+        "replies": 11,
+        "views": "42704",
+        "quotes": 6,
+        "bookmarks": 293
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/hwchase17/status/2051708710859501807",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/73QzZkZrUh",
+          "expanded_url": "http://x.com/i/article/2051349685982650368",
+          "display_url": "x.com/i/article/2051…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052013769119948934",
+      "text": "Claude Code used 3x fewer tokens with one change:\n\n$9.21 → $2.81\n10.4M tokens → 3.7M\n10 errors → ZERO\n\nOne change fixed everything:\n\nInsForge Skills + CLI = context engineering for Claude Code.\n\nLocal. Open-source. Brutally efficient.\n\nRepo: https://t.co/HPA753pH1i\n\n(Star it before this blows up 🌟)",
+      "created_at": "Wed May 06 13:13:01 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1676317602941894657",
+        "name": "Leonard Rodman",
+        "username": "RodmanAi",
+        "avatar": "https://pbs.twimg.com/profile_images/1727738232249499648/4KnJDu3m_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 67,
+        "retweets": 20,
+        "replies": 2,
+        "views": "2592",
+        "quotes": 1,
+        "bookmarks": 33
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/RodmanAi/status/2052013769119948934",
+      "media": [
+        {
+          "id": "2052013697560969218",
+          "type": "video",
+          "media_url": "https://pbs.twimg.com/amplify_video_thumb/2052013697560969218/img/Rg0yri2IcV-LguR6.jpg",
+          "expanded_url": "https://x.com/RodmanAi/status/2052013769119948934/video/1",
+          "display_url": "pic.x.com/xjSyiitjw5",
+          "url": "https://t.co/xjSyiitjw5",
+          "width": 944,
+          "height": 720
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/HPA753pH1i",
+          "expanded_url": "https://github.com/InsForge/InsForge",
+          "display_url": "github.com/InsForge/InsFo…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051911386402279692",
+      "text": "My demo failed because Podman wasn’t running and Bob started reading an infrastructure problem like code.\n\nThat turned into a better #Quarkus Agent MCP. I wrote about what the tool actually changes in Quarkus work.\n\nhttps://t.co/RwTjADs0MO\n#java #ibmbob",
+      "created_at": "Wed May 06 06:26:11 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "14206328",
+        "name": "Markus Eisele",
+        "username": "myfear",
+        "avatar": "https://pbs.twimg.com/profile_images/2004219520760623104/kj9IG9Tk_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 4,
+        "retweets": 0,
+        "replies": 0,
+        "views": "385",
+        "quotes": 0,
+        "bookmarks": 4
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/myfear/status/2051911386402279692",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/RwTjADs0MO",
+          "expanded_url": "http://buff.ly/l2G3SGV",
+          "display_url": "buff.ly/l2G3SGV"
+        }
+      ],
+      "hashtags": [
+        "Quarkus",
+        "java",
+        "ibmbob"
+      ],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052010983304876066",
+      "text": "With Ingestion, you can say goodbye to the days of siloed knowledge across tools. Our new Stack Internal feature intelligently chunks, cleans, and converts raw text into structured Q&A pairs that are optimized for both human discovery and AI retrieval. Now, you can build a continuous stream of expert-vetted knowledge delivered straight to your people and their tools whenever they need it. \n\nLearn more about how Ingestion harnesses and superpowers your siloed knowledge: https://t.co/OKZV4YeEwV",
+      "created_at": "Wed May 06 13:01:57 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "128700677",
+        "name": "Stack Overflow",
+        "username": "StackOverflow",
+        "avatar": "https://pbs.twimg.com/profile_images/1995901449364992000/e--l2c2r_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 3,
+        "retweets": 1,
+        "replies": 0,
+        "views": "879",
+        "quotes": 0,
+        "bookmarks": 1
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/StackOverflow/status/2052010983304876066",
+      "media": [
+        {
+          "id": "2052010979626532867",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHo1HSvXQAM3J8T.jpg",
+          "expanded_url": "https://x.com/StackOverflow/status/2052010983304876066/photo/1",
+          "display_url": "pic.x.com/Dk8WBM9n2Y",
+          "url": "https://t.co/Dk8WBM9n2Y",
+          "width": 1560,
+          "height": 820
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/OKZV4YeEwV",
+          "expanded_url": "https://stackoverflow.blog/2026/04/28/turn-scattered-knowledge-into-trusted-intelligence/?utm_medium=social&utm_source=twitter&utm_campaign=stack-internal&utm_content=ingestion-release-blog",
+          "display_url": "stackoverflow.blog/2026/04/28/tur…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2051882417292525950",
+      "text": "CodexBar 0.24 is live\n\n🤖 New Windsurf, Codebuff + DeepSeek providers\n👥 Copilot multi-account switching\n🧹 Opt-in local storage breakdowns\n🔋 Hung Codex RPC + redraw battery drain fixed\n\nTiny menu bar, ridiculous changelog.\nhttps://t.co/wHwYvCIoxK",
+      "created_at": "Wed May 06 04:31:05 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "25401953",
+        "name": "Peter Steinberger 🦞",
+        "username": "steipete",
+        "avatar": "https://pbs.twimg.com/profile_images/1131851609774985216/OcsssQ9J_normal.png",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 222,
+        "retweets": 16,
+        "replies": 20,
+        "views": "23638",
+        "quotes": 1,
+        "bookmarks": 65
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/steipete/status/2051882417292525950",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/wHwYvCIoxK",
+          "expanded_url": "https://github.com/steipete/CodexBar/releases/tag/v0.24",
+          "display_url": "github.com/steipete/Codex…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    },
+    {
+      "id": "2052068392249790975",
+      "text": "Cracking the Forward Deployed\nAI Engineer Interview\n\nRoadmap, System Design, Case Studies &amp; Mock Interviews\nfor FDE Roles in 2026\n\nhttps://t.co/emig4UcqqH https://t.co/V7hKQuwBIq",
+      "created_at": "Wed May 06 16:50:04 +0000 2026",
+      "lang": "en",
+      "author": {
+        "id": "1863571201060392960",
+        "name": "Vaishnavi",
+        "username": "_vmlops",
+        "avatar": "https://pbs.twimg.com/profile_images/2017673694068543493/h06eTOL0_normal.jpg",
+        "verified": false,
+        "is_blue_verified": true
+      },
+      "metrics": {
+        "likes": 85,
+        "retweets": 10,
+        "replies": 2,
+        "views": "2950",
+        "quotes": 0,
+        "bookmarks": 107
+      },
+      "is_retweet": false,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_vmlops/status/2052068392249790975",
+      "media": [
+        {
+          "id": "2052068388059676678",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/HHppU50bAAYxC4P.jpg",
+          "expanded_url": "https://x.com/_vmlops/status/2052068392249790975/photo/1",
+          "display_url": "pic.x.com/V7hKQuwBIq",
+          "url": "https://t.co/V7hKQuwBIq",
+          "width": 991,
+          "height": 1397
+        }
+      ],
+      "urls": [
+        {
+          "url": "https://t.co/emig4UcqqH",
+          "expanded_url": "https://drive.google.com/file/d/1HUCOIXTCi4yckut41E_xwOjMx1acV5zF/view?usp=drivesdk",
+          "display_url": "drive.google.com/file/d/1HUCOIX…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [],
+      "quoted_tweet": null,
+      "retweeted_tweet": null,
+      "possibly_sensitive": false
+    }
+  ]
+}

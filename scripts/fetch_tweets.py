@@ -86,18 +86,75 @@ async def get_client() -> twikit.Client:
 # Tweet serialization
 # ---------------------------------------------------------------------------
 
-def tweet_to_dict(tweet) -> dict:
-    user = getattr(tweet, "user", None)
+def _media_to_dict(m) -> dict:
     return {
-        "id": str(getattr(tweet, "id", "")),
-        "text": getattr(tweet, "text", "") or getattr(tweet, "full_text", ""),
+        "id": getattr(m, "id", None),
+        "type": getattr(m, "type", None),
+        "media_url": getattr(m, "media_url", None),
+        "expanded_url": getattr(m, "expanded_url", None),
+        "display_url": getattr(m, "display_url", None),
+        "url": getattr(m, "url", None),
+        "width": (getattr(m, "_data", {}) or {}).get("original_info", {}).get("width"),
+        "height": (getattr(m, "_data", {}) or {}).get("original_info", {}).get("height"),
+    }
+
+
+def _user_to_dict(user) -> dict | None:
+    if not user:
+        return None
+    return {
+        "id": str(getattr(user, "id", "") or ""),
+        "name": getattr(user, "name", None),
+        "username": getattr(user, "screen_name", None),
+        "avatar": getattr(user, "profile_image_url", None),
+        "verified": bool(getattr(user, "verified", False)),
+        "is_blue_verified": bool(getattr(user, "is_blue_verified", False)),
+    }
+
+
+def tweet_to_dict(tweet, depth: int = 0) -> dict:
+    user = getattr(tweet, "user", None)
+
+    media_list = [_media_to_dict(m) for m in (getattr(tweet, "media", []) or [])]
+
+    urls_list = []
+    raw_urls = getattr(tweet, "urls", None) or []
+    for u in raw_urls:
+        if isinstance(u, dict):
+            urls_list.append({
+                "url": u.get("url"),
+                "expanded_url": u.get("expanded_url"),
+                "display_url": u.get("display_url"),
+            })
+
+    user_mentions = []
+    legacy = getattr(tweet, "_legacy", {}) or {}
+    for um in legacy.get("entities", {}).get("user_mentions", []) or []:
+        user_mentions.append({
+            "id": um.get("id_str"),
+            "name": um.get("name"),
+            "username": um.get("screen_name"),
+        })
+
+    hashtags = list(getattr(tweet, "hashtags", []) or [])
+
+    # Recursively serialize quoted / retweeted (one level only)
+    quoted = None
+    retweeted = None
+    if depth < 1:
+        q = getattr(tweet, "quote", None)
+        if q is not None:
+            quoted = tweet_to_dict(q, depth=depth + 1)
+        rt = getattr(tweet, "retweeted_tweet", None)
+        if rt is not None:
+            retweeted = tweet_to_dict(rt, depth=depth + 1)
+
+    return {
+        "id": str(getattr(tweet, "id", "") or ""),
+        "text": getattr(tweet, "full_text", None) or getattr(tweet, "text", "") or "",
         "created_at": getattr(tweet, "created_at", None),
         "lang": getattr(tweet, "lang", None),
-        "author": {
-            "id": str(getattr(user, "id", "")),
-            "name": getattr(user, "name", None),
-            "username": getattr(user, "screen_name", None),
-        } if user else None,
+        "author": _user_to_dict(user),
         "metrics": {
             "likes": getattr(tweet, "favorite_count", 0) or 0,
             "retweets": getattr(tweet, "retweet_count", 0) or 0,
@@ -106,10 +163,18 @@ def tweet_to_dict(tweet) -> dict:
             "quotes": getattr(tweet, "quote_count", 0) or 0,
             "bookmarks": getattr(tweet, "bookmark_count", 0) or 0,
         },
-        "is_retweet": getattr(tweet, "retweeted_tweet", None) is not None,
+        "is_retweet": retweeted is not None,
         "is_reply": getattr(tweet, "in_reply_to", None) is not None,
-        "is_quote": getattr(tweet, "is_quote_status", False),
+        "is_quote": getattr(tweet, "is_quote_status", False) or quoted is not None,
+        "in_reply_to_id": getattr(tweet, "in_reply_to", None),
         "url": f"https://x.com/{user.screen_name}/status/{tweet.id}" if user and getattr(user, "screen_name", None) else None,
+        "media": media_list,
+        "urls": urls_list,
+        "hashtags": hashtags,
+        "user_mentions": user_mentions,
+        "quoted_tweet": quoted,
+        "retweeted_tweet": retweeted,
+        "possibly_sensitive": getattr(tweet, "possibly_sensitive", False) or False,
     }
 
 
