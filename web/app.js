@@ -1,4 +1,9 @@
-const INDEX_URL = "../data/index.json";
+// Three operating modes:
+//   1. Live API (Railway / Flask app)  -> /api/snapshots, /api/tweets
+//   2. Static dev (python -m http.server in repo) -> ../data/*.json
+//   3. Standalone (single HTML file)   -> in-memory data via fetch shim
+//
+// We probe /api/snapshots once at startup and pick the right mode.
 
 const $ = (sel) => document.querySelector(sel);
 const tweetsEl = $("#tweets");
@@ -11,6 +16,7 @@ const statsEl = $("#stats");
 
 let allSnapshots = [];
 let currentTweets = [];
+let useApi = false;
 
 // ---------------------------------------------------------------------------
 // SVG icons (Twitter-style)
@@ -32,18 +38,39 @@ const ICONS = {
 // Init
 // ---------------------------------------------------------------------------
 
+async function detectMode() {
+  try {
+    const resp = await fetch("/api/snapshots", { cache: "no-store" });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data)) {
+        useApi = true;
+        return data;
+      }
+    }
+  } catch (_) { /* fall through */ }
+
+  // No live API — fall back to data/index.json (works in standalone mode too,
+  // because the standalone build injects a fetch shim for that path).
+  try {
+    const resp = await fetch("../data/index.json", { cache: "no-store" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return await resp.json();
+  } catch (e) {
+    throw new Error(`No hay API ni data/index.json accesibles: ${e.message}`);
+  }
+}
+
 async function init() {
   try {
-    const resp = await fetch(INDEX_URL);
-    if (!resp.ok) throw new Error(`No se pudo leer ${INDEX_URL}`);
-    allSnapshots = await resp.json();
+    allSnapshots = await detectMode();
   } catch (e) {
-    showError(`Error cargando index.json: ${e.message}. Recuerda servir el repo con un servidor HTTP (p.ej. <code>python -m http.server</code>).`);
+    showError(`Error cargando snapshots: ${e.message}.`);
     return;
   }
 
-  if (allSnapshots.length === 0) {
-    showError("No hay snapshots todavía. Ejecuta el script de captura primero.");
+  if (!Array.isArray(allSnapshots) || allSnapshots.length === 0) {
+    showError("No hay snapshots todavía. Lanza la rutina de captura primero.");
     return;
   }
 
@@ -67,8 +94,10 @@ function populateSnapshots() {
   ];
   for (const s of allSnapshots) {
     const dateStr = new Date(s.fetched_at).toLocaleString();
+    // In API mode we key by snapshot id; in file mode by file path.
+    const value = useApi ? `id:${s.id}` : s.file;
     opts.push({
-      value: s.file,
+      value,
       label: `${dateStr} — ${s.source} (@${s.username}) — ${s.count} tweets`,
     });
   }
@@ -85,6 +114,32 @@ async function loadCurrentSelection() {
   const value = snapshotSelect.value;
   const sourceWanted = sourceFilter.value;
 
+  tweetsEl.innerHTML = '<div class="spinner">Cargando…</div>';
+
+  if (useApi) {
+    // Live API mode — let the server resolve the selection.
+    const params = new URLSearchParams();
+    if (value === "all" || value === "all_latest") {
+      params.set("selection", value);
+    } else if (value.startsWith("id:")) {
+      params.set("selection", "snapshot");
+      params.set("id", value.slice(3));
+    }
+    if (sourceWanted !== "all") params.set("source", sourceWanted);
+
+    try {
+      const resp = await fetch(`/api/tweets?${params.toString()}`, { cache: "no-store" });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      currentTweets = await resp.json();
+    } catch (e) {
+      showError(`Error cargando tweets: ${e.message}`);
+      return;
+    }
+    render();
+    return;
+  }
+
+  // File / standalone mode — load JSON snapshot files directly.
   let snapshotsToLoad = [];
   if (value === "all") {
     snapshotsToLoad = allSnapshots;
@@ -110,8 +165,6 @@ async function loadCurrentSelection() {
     return;
   }
 
-  tweetsEl.innerHTML = '<div class="spinner">Cargando…</div>';
-
   const all = [];
   for (const s of snapshotsToLoad) {
     try {
@@ -125,7 +178,6 @@ async function loadCurrentSelection() {
     }
   }
 
-  // Deduplicate by tweet id, keep first occurrence (most recent snapshot first)
   const seen = new Set();
   currentTweets = all.filter((t) => {
     if (seen.has(t.id)) return false;

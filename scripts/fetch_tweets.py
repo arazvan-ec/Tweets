@@ -119,6 +119,12 @@ _User.__init__ = _patched_user_init
 async def get_client() -> twikit.Client:
     client = twikit.Client(language="en-US")
 
+    # If TWITTER_COOKIES_JSON is set (e.g. on Railway / GitHub Actions), write
+    # it to disk so twikit can load it. Existing files take priority.
+    if not COOKIES_FILE.exists() and os.getenv("TWITTER_COOKIES_JSON"):
+        COOKIES_FILE.parent.mkdir(parents=True, exist_ok=True)
+        COOKIES_FILE.write_text(os.environ["TWITTER_COOKIES_JSON"])
+
     if COOKIES_FILE.exists():
         client.load_cookies(str(COOKIES_FILE))
         print("Session loaded from cookies.")
