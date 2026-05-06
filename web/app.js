@@ -1,39 +1,73 @@
-// Talks to the Flask app at /api/snapshots and /api/tweets, which proxy
-// to Supabase server-side. No JSON files on disk — Supabase is the only
-// source of truth.
+// Tweets — single-page Twitter clone backed by /api/* (Supabase + twikit).
+//
+// Major features wired here:
+//   * Tabs: For You / Following / My tweets
+//   * Auto-refresh on load + freshness indicator
+//   * Infinite scroll (IntersectionObserver)
+//   * Pull-to-refresh (touch gestures)
+//   * Like / Retweet / Bookmark / Reply with optimistic UI
+//   * In-app profile pages at #u/<handle>
+//   * New-tweet highlight via localStorage marker
+
+// ---------------------------------------------------------------------------
+// DOM refs
+// ---------------------------------------------------------------------------
 
 const $ = (sel) => document.querySelector(sel);
-const tweetsEl = $("#tweets");
-const snapshotSelect = $("#snapshot-select");
-const sourceFilter = $("#source-filter");
+const contentEl = $("#content");
+const tabsEl = $("#tabs");
+const controlsEl = $("#controls");
 const typeFilter = $("#type-filter");
 const sortBy = $("#sort-by");
 const searchInput = $("#search");
-const statsEl = $("#stats");
 const refreshBtn = $("#refresh-btn");
 const refreshLabel = $("#refresh-label");
-
-const LAST_SEEN_KEY = "tweets:last_seen_at";
-const REPLIES_OPEN = new Set();   // tweet ids whose replies are currently expanded
-const REPLIES_CACHE = new Map();  // tweet_id -> [reply, ...]
-
-let allSnapshots = [];
-let currentTweets = [];
+const freshnessEl = $("#freshness");
+const ptrEl = $("#ptr-indicator");
+const sentinelEl = $("#scroll-sentinel");
 
 // ---------------------------------------------------------------------------
-// SVG icons (Twitter-style)
+// State
+// ---------------------------------------------------------------------------
+
+const LAST_SEEN_KEY = "tweets:last_seen_at";
+const REPLIES_OPEN = new Set();
+const REPLIES_CACHE = new Map();
+const COMPOSE_OPEN = new Set();
+const PAGE_SIZE = 25;
+
+let snapshots = [];
+let currentTab = "for_you";       // for_you | following | mine | profile
+let currentTweets = [];           // hydrated rows currently rendered
+let pageOffset = 0;
+let pageHasMore = false;
+let pageLoading = false;
+let lastFetchedAt = null;         // ISO of newest snapshot, for freshness label
+let route = { kind: "home" };     // {kind:'home'} | {kind:'profile', handle: '...'}
+
+// ---------------------------------------------------------------------------
+// SVG icons
 // ---------------------------------------------------------------------------
 
 const ICONS = {
   reply: '<svg viewBox="0 0 24 24"><path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01z"/></svg>',
   retweet: '<svg viewBox="0 0 24 24"><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"/></svg>',
   like: '<svg viewBox="0 0 24 24"><path d="M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C9.984 6.01 8.526 5.44 7.304 5.5c-1.243.07-2.349.78-2.91 1.91-.552 1.12-.633 2.78.479 4.82 1.074 1.97 3.257 4.27 7.129 6.61 3.87-2.34 6.052-4.64 7.126-6.61 1.111-2.04 1.03-3.7.477-4.82-.561-1.13-1.666-1.84-2.908-1.91zm4.187 7.69c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/></svg>',
+  like_filled: '<svg viewBox="0 0 24 24"><path d="M20.884 13.19c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3C7.119 18.31 4.469 15.67 3.116 13.19c-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/></svg>',
   views: '<svg viewBox="0 0 24 24"><path d="M8.75 21V3h2v18h-2zM18 21V8.5h2V21h-2zM4 21l.004-10h2L6 21H4zm9.248 0v-7h2v7h-2z"/></svg>',
   bookmark: '<svg viewBox="0 0 24 24"><path d="M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5zM6.5 4c-.276 0-.5.22-.5.5v14.56l6-4.29 6 4.29V4.5c0-.28-.224-.5-.5-.5h-11z"/></svg>',
+  bookmark_filled: '<svg viewBox="0 0 24 24"><path d="M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5z"/></svg>',
   verified_blue: '<svg viewBox="0 0 22 22" class="verified-icon blue"><g><path d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.687.878.633.132 1.29.084 1.897-.136.274.586.705 1.084 1.246 1.439.54.354 1.17.551 1.816.569.647-.016 1.276-.213 1.817-.567s.972-.854 1.245-1.44c.604.239 1.266.296 1.903.164.636-.132 1.22-.447 1.68-.907.46-.46.776-1.044.908-1.681s.075-1.299-.165-1.903c.586-.274 1.084-.705 1.439-1.246.354-.54.551-1.17.569-1.816zM9.662 14.85l-3.429-3.428 1.293-1.302 2.072 2.072 4.4-4.794 1.347 1.246z"/></g></svg>',
   verified_gold: '<svg viewBox="0 0 22 22" class="verified-icon gold"><g><path d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.687.878.633.132 1.29.084 1.897-.136.274.586.705 1.084 1.246 1.439.54.354 1.17.551 1.816.569.647-.016 1.276-.213 1.817-.567s.972-.854 1.245-1.44c.604.239 1.266.296 1.903.164.636-.132 1.22-.447 1.68-.907.46-.46.776-1.044.908-1.681s.075-1.299-.165-1.903c.586-.274 1.084-.705 1.439-1.246.354-.54.551-1.17.569-1.816zM9.662 14.85l-3.429-3.428 1.293-1.302 2.072 2.072 4.4-4.794 1.347 1.246z"/></g></svg>',
   retweet_small: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"/></svg>',
   video: '<svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M7 4v16l13-8z"/></svg>',
+  back: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M7.414 13l5.043 5.04-1.414 1.42L3.586 12l7.457-7.46 1.414 1.42L7.414 11H21v2H7.414z"/></svg>',
+};
+
+const SOURCE_LABEL = {
+  for_you: "Para ti",
+  following: "Siguiendo",
+  mine: "Mis tweets",
 };
 
 // ---------------------------------------------------------------------------
@@ -41,69 +75,204 @@ const ICONS = {
 // ---------------------------------------------------------------------------
 
 async function init() {
-  try {
-    const resp = await fetch("/api/snapshots", { cache: "no-store" });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    allSnapshots = await resp.json();
-  } catch (e) {
-    showError(`Error contactando con la API: ${e.message}`);
-    return;
-  }
-
-  if (!Array.isArray(allSnapshots) || allSnapshots.length === 0) {
-    showError("No hay snapshots todavía. Lanza la rutina de captura primero.");
-    return;
-  }
-
-  allSnapshots.sort((a, b) => b.fetched_at.localeCompare(a.fetched_at));
-
-  populateSnapshots();
-
-  snapshotSelect.addEventListener("change", loadCurrentSelection);
-  sourceFilter.addEventListener("change", loadCurrentSelection);
-  typeFilter.addEventListener("change", render);
-  sortBy.addEventListener("change", render);
-  searchInput.addEventListener("input", render);
-  refreshBtn.addEventListener("click", onRefreshClick);
-  tweetsEl.addEventListener("click", onTweetsClick);
-  statsEl.addEventListener("click", (ev) => {
-    if (ev.target.closest('[data-action="mark-seen"]')) {
-      ev.preventDefault();
-      markAllAsSeen();
-    }
+  // Tabs
+  tabsEl.addEventListener("click", (ev) => {
+    const link = ev.target.closest("[data-tab]");
+    if (!link) return;
+    ev.preventDefault();
+    const tab = link.dataset.tab;
+    if (tab === currentTab && route.kind === "home") return;
+    location.hash = `#${tab}`;
   });
 
-  await loadCurrentSelection();
+  // Brand → home
+  document.querySelector(".brand").addEventListener("click", (ev) => {
+    ev.preventDefault();
+    location.hash = `#${currentTab}`;
+  });
+
+  // Filters
+  typeFilter.addEventListener("change", () => render());
+  sortBy.addEventListener("change", () => render());
+  searchInput.addEventListener("input", () => render());
+
+  // Refresh
+  refreshBtn.addEventListener("click", () => triggerRefresh(currentTab));
+
+  // Tweets click delegation (replies, compose, like/RT/bookmark, profile)
+  contentEl.addEventListener("click", onContentClick);
+
+  // Hash routing
+  window.addEventListener("hashchange", handleRoute);
+
+  // Infinite scroll
+  setupInfiniteScroll();
+
+  // Pull to refresh
+  setupPullToRefresh();
+
+  // Periodic freshness label update
+  setInterval(updateFreshness, 15000);
+
+  await refreshSnapshotList();
+  handleRoute();
+
+  // Auto-refresh once at load if data is older than 30s
+  if (snapshots.length === 0 || isStale(30)) {
+    triggerRefresh(currentTab, /*silent=*/true);
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Refresh
+// Routing
 // ---------------------------------------------------------------------------
 
-async function onRefreshClick() {
+function handleRoute() {
+  const h = (location.hash || "").replace(/^#/, "");
+  if (h.startsWith("u/")) {
+    route = { kind: "profile", handle: h.slice(2) };
+    renderProfile();
+    return;
+  }
+  if (["for_you", "following", "mine"].includes(h)) {
+    currentTab = h;
+  }
+  route = { kind: "home" };
+  // Mark active tab in DOM
+  for (const a of tabsEl.querySelectorAll("[data-tab]")) {
+    a.classList.toggle("active", a.dataset.tab === currentTab);
+  }
+  controlsEl.style.display = "";
+  tabsEl.style.display = "";
+  loadFirstPage();
+}
+
+function navigateProfile(handle) {
+  if (!handle) return;
+  location.hash = `#u/${handle}`;
+}
+
+// ---------------------------------------------------------------------------
+// Snapshots / freshness
+// ---------------------------------------------------------------------------
+
+async function refreshSnapshotList() {
+  try {
+    const resp = await fetch("/api/snapshots", { cache: "no-store" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    snapshots = await resp.json();
+    snapshots.sort((a, b) => b.fetched_at.localeCompare(a.fetched_at));
+    lastFetchedAt = snapshots[0]?.fetched_at || null;
+    updateFreshness();
+  } catch (e) {
+    console.error("snapshots error", e);
+  }
+}
+
+function isStale(seconds) {
+  if (!lastFetchedAt) return true;
+  return (Date.now() - new Date(lastFetchedAt).getTime()) / 1000 > seconds;
+}
+
+function updateFreshness() {
+  if (!lastFetchedAt) {
+    freshnessEl.textContent = "";
+    return;
+  }
+  const ageSec = Math.max(0, Math.round((Date.now() - new Date(lastFetchedAt).getTime()) / 1000));
+  freshnessEl.textContent = ageSec < 60
+    ? `actualizado hace ${ageSec}s`
+    : `actualizado hace ${Math.round(ageSec / 60)} min`;
+}
+
+// ---------------------------------------------------------------------------
+// Loading tweets
+// ---------------------------------------------------------------------------
+
+async function loadFirstPage() {
+  pageOffset = 0;
+  pageHasMore = false;
+  currentTweets = [];
+  contentEl.innerHTML = '<div class="spinner">Cargando…</div>';
+  await loadMore();
+}
+
+async function loadMore() {
+  if (pageLoading || (!pageHasMore && pageOffset > 0)) return;
+  pageLoading = true;
+
+  if (pageOffset > 0) {
+    const loader = document.createElement("div");
+    loader.className = "bottom-loader";
+    loader.id = "bottom-loader";
+    loader.textContent = "Cargando más…";
+    contentEl.appendChild(loader);
+  }
+
+  const params = new URLSearchParams({
+    selection: "all_latest",
+    source: currentTab,
+    limit: String(PAGE_SIZE),
+    offset: String(pageOffset),
+  });
+
+  try {
+    const resp = await fetch(`/api/tweets?${params.toString()}`, { cache: "no-store" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    currentTweets = currentTweets.concat(data.tweets || []);
+    pageOffset += data.tweets?.length || 0;
+    pageHasMore = !!data.has_more;
+    document.getElementById("bottom-loader")?.remove();
+    render();
+    if (!pageHasMore && currentTweets.length > 0) {
+      const end = document.createElement("div");
+      end.className = "bottom-loader";
+      end.textContent = "·";
+      contentEl.appendChild(end);
+    }
+  } catch (e) {
+    document.getElementById("bottom-loader")?.remove();
+    if (currentTweets.length === 0) {
+      showError(`Error cargando tweets: ${e.message}`);
+    } else {
+      showToast(`Error: ${e.message}`, "error");
+    }
+  } finally {
+    pageLoading = false;
+  }
+}
+
+function setupInfiniteScroll() {
+  const io = new IntersectionObserver((entries) => {
+    if (route.kind !== "home") return;
+    if (entries.some((e) => e.isIntersecting) && pageHasMore) {
+      loadMore();
+    }
+  }, { rootMargin: "200px" });
+  io.observe(sentinelEl);
+}
+
+// ---------------------------------------------------------------------------
+// Refresh trigger
+// ---------------------------------------------------------------------------
+
+async function triggerRefresh(source, silent = false) {
   if (refreshBtn.disabled) return;
   refreshBtn.disabled = true;
   refreshBtn.classList.add("loading");
-  refreshLabel.textContent = "Capturando…";
+  if (!silent) refreshLabel.textContent = "Capturando…";
   try {
-    const resp = await fetch("/api/refresh?source=timeline&max=50", { method: "POST" });
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(text || `HTTP ${resp.status}`);
-    }
-    const data = await resp.json();
-    showToast(`✓ Snapshot ${data.latest_snapshot?.id} guardado`, "success");
-    // Reload the snapshot list and the current view.
-    const sResp = await fetch("/api/snapshots", { cache: "no-store" });
-    if (sResp.ok) {
-      allSnapshots = await sResp.json();
-      allSnapshots.sort((a, b) => b.fetched_at.localeCompare(a.fetched_at));
-      populateSnapshots();
-    }
-    await loadCurrentSelection();
+    const apiSource = source === "mine" ? "mine" : (source === "for_you" || source === "following" ? source : "all_feeds");
+    const resp = await fetch(`/api/refresh?source=${apiSource}&max=50`, { method: "POST" });
+    if (!resp.ok) throw new Error(await resp.text() || `HTTP ${resp.status}`);
+    await resp.json();
+    if (!silent) showToast("✓ Datos actualizados", "success");
+    await refreshSnapshotList();
+    if (route.kind === "home") await loadFirstPage();
   } catch (e) {
     console.error(e);
-    showToast(`Error: ${e.message}`, "error");
+    if (!silent) showToast(`Error: ${e.message}`, "error");
   } finally {
     refreshBtn.disabled = false;
     refreshBtn.classList.remove("loading");
@@ -111,42 +280,366 @@ async function onRefreshClick() {
   }
 }
 
-function showToast(msg, kind = "") {
-  const el = document.createElement("div");
-  el.className = `toast ${kind}`;
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+// ---------------------------------------------------------------------------
+// Pull to refresh
+// ---------------------------------------------------------------------------
+
+function setupPullToRefresh() {
+  let startY = null;
+  let pulling = false;
+
+  document.addEventListener("touchstart", (ev) => {
+    if (window.scrollY > 0) return;
+    startY = ev.touches[0].clientY;
+    pulling = true;
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (ev) => {
+    if (!pulling || startY == null) return;
+    const dy = ev.touches[0].clientY - startY;
+    if (dy < 0) {
+      pulling = false;
+      ptrEl.classList.remove("visible");
+      return;
+    }
+    if (dy > 60) {
+      ptrEl.classList.add("visible");
+    } else {
+      ptrEl.classList.remove("visible");
+    }
+  }, { passive: true });
+
+  document.addEventListener("touchend", async () => {
+    if (!pulling) return;
+    pulling = false;
+    if (ptrEl.classList.contains("visible")) {
+      ptrEl.classList.add("spinning");
+      await triggerRefresh(currentTab, /*silent=*/true);
+      ptrEl.classList.remove("visible", "spinning");
+    }
+    startY = null;
+  });
 }
 
 // ---------------------------------------------------------------------------
-// Tweet click handler — delegates expand/collapse for replies
+// Filtering + rendering (home tab)
 // ---------------------------------------------------------------------------
 
-async function onTweetsClick(ev) {
+function applyFilters(tweets) {
+  let filtered = tweets;
+  const type = typeFilter.value;
+  if (type === "original") filtered = filtered.filter((t) => !t.is_retweet && !t.is_reply && !t.is_quote);
+  else if (type === "retweet") filtered = filtered.filter((t) => t.is_retweet);
+  else if (type === "reply") filtered = filtered.filter((t) => t.is_reply);
+  else if (type === "quote") filtered = filtered.filter((t) => t.is_quote);
+  else if (type === "media") filtered = filtered.filter((t) => Array.isArray(t.media) && t.media.length > 0);
+
+  const q = searchInput.value.trim().toLowerCase();
+  if (q) {
+    filtered = filtered.filter((t) => {
+      const haystack = [t.text, t.author?.name, t.author?.username].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
+  }
+  return filtered;
+}
+
+function applySort(tweets) {
+  const mode = sortBy.value;
+  const copy = [...tweets];
+  const num = (v) => {
+    if (v == null) return 0;
+    const n = parseInt(String(v).replace(/,/g, ""), 10);
+    return isNaN(n) ? 0 : n;
+  };
+  if (mode === "date_desc") copy.sort((a, b) => parseTwitterDate(b.created_at) - parseTwitterDate(a.created_at));
+  else if (mode === "date_asc") copy.sort((a, b) => parseTwitterDate(a.created_at) - parseTwitterDate(b.created_at));
+  else if (mode === "likes") copy.sort((a, b) => num(b.metrics?.likes) - num(a.metrics?.likes));
+  else if (mode === "retweets") copy.sort((a, b) => num(b.metrics?.retweets) - num(a.metrics?.retweets));
+  else if (mode === "replies") copy.sort((a, b) => num(b.metrics?.replies) - num(a.metrics?.replies));
+  else if (mode === "views") copy.sort((a, b) => num(b.metrics?.views) - num(a.metrics?.views));
+  return copy;
+}
+
+function render() {
+  if (route.kind !== "home") return;
+  const filtered = applySort(applyFilters(currentTweets));
+
+  if (filtered.length === 0) {
+    contentEl.innerHTML = '<div class="empty">No hay tweets en este feed todavía. Pulsa Actualizar para capturar.</div>';
+    return;
+  }
+
+  contentEl.innerHTML = filtered.map(renderTweet).join("");
+}
+
+// ---------------------------------------------------------------------------
+// Tweet card rendering
+// ---------------------------------------------------------------------------
+
+function renderTweet(t) {
+  const isRT = t.is_retweet && t.retweeted_tweet;
+  const display = isRT ? t.retweeted_tweet : t;
+  const retweeter = isRT ? t.author : null;
+
+  const author = display.author || {};
+  const m = display.metrics || {};
+  const vs = display.viewer_state || {};
+
+  const lastSeen = localStorage.getItem(LAST_SEEN_KEY) || "1970-01-01T00:00:00Z";
+  const isNew = !!(t._first_seen_at && t._first_seen_at > lastSeen);
+
+  let header = "";
+  if (retweeter) {
+    header = `<div class="tweet-context">${ICONS.retweet_small} ${escapeHtml(retweeter.name || retweeter.username || "")} retwitteó</div>`;
+  }
+
+  let replyingTo = "";
+  if (display.is_reply && Array.isArray(display.user_mentions) && display.user_mentions.length > 0) {
+    const m0 = display.user_mentions[0];
+    replyingTo = `<div class="replying-to">Respondiendo a <a href="#u/${escapeAttr(m0.username || "")}" data-handle="${escapeAttr(m0.username || "")}">@${escapeHtml(m0.username || "")}</a></div>`;
+  }
+
+  const verifiedBadge = badgeFor(author);
+  const text = renderText(display);
+  const media = renderMedia(display.media);
+  const quote = display.quoted_tweet ? renderQuote(display.quoted_tweet) : "";
+  const card = renderUrlCard(display);
+  const langBadge = display.lang ? `<span class="lang-badge">${escapeHtml(display.lang)}</span>` : "";
+  const newPill = isNew ? `<span class="new-pill">nuevo</span>` : "";
+
+  const avatar = author.avatar
+    ? `<img src="${escapeAttr(upgradeAvatar(author.avatar))}" alt="" loading="lazy">`
+    : `<div style="width:100%;height:100%;background:#2f3336;"></div>`;
+
+  return `
+    <article class="tweet ${isNew ? "is-new" : ""}" data-tweet-id="${escapeAttr(display.id)}">
+      <div class="tweet-avatar" data-action="profile" data-handle="${escapeAttr(author.username || "")}">${avatar}</div>
+      <div class="tweet-body">
+        ${header}
+        <div class="tweet-header">
+          <span class="tweet-name" data-action="profile" data-handle="${escapeAttr(author.username || "")}">${escapeHtml(author.name || "?")}${verifiedBadge}</span>
+          <span class="tweet-handle" data-action="profile" data-handle="${escapeAttr(author.username || "")}">@${escapeHtml(author.username || "?")}</span>
+          <span class="tweet-sep">·</span>
+          <a class="tweet-date" href="${escapeAttr(display.url || "#")}" target="_blank" rel="noopener" title="${escapeAttr(formatFullDate(display.created_at))}">${escapeHtml(formatRelative(display.created_at))}</a>
+          ${langBadge}
+          ${newPill}
+        </div>
+        ${replyingTo}
+        <div class="tweet-text">${text}</div>
+        ${media}
+        ${quote}
+        ${card}
+        <div class="tweet-actions">
+          <button class="tweet-action action-reply" data-action="toggle-compose" title="Responder">
+            ${ICONS.reply}<span>${formatNum(m.replies)}</span>
+          </button>
+          <button class="tweet-action action-retweet ${vs.retweeted ? "is-active" : ""}" data-action="toggle-retweet" title="Retweet">
+            ${ICONS.retweet}<span>${formatNum(m.retweets)}</span>
+          </button>
+          <button class="tweet-action action-like ${vs.liked ? "is-active" : ""}" data-action="toggle-like" title="Like">
+            ${vs.liked ? ICONS.like_filled : ICONS.like}<span>${formatNum(m.likes)}</span>
+          </button>
+          <button class="tweet-action action-bookmark ${vs.bookmarked ? "is-active" : ""}" data-action="toggle-bookmark" title="Bookmark">
+            ${vs.bookmarked ? ICONS.bookmark_filled : ICONS.bookmark}<span>${formatNum(m.bookmarks)}</span>
+          </button>
+          <button class="tweet-action action-views" title="Vistas">
+            ${ICONS.views}<span>${formatNum(m.views)}</span>
+          </button>
+          <button class="tweet-action" data-action="toggle-replies" title="Ver hilo">
+            💬
+          </button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderQuote(q) {
+  const author = q.author || {};
+  const verifiedBadge = badgeFor(author);
+  const avatar = author.avatar ? `<img src="${escapeAttr(upgradeAvatar(author.avatar))}" loading="lazy">` : "";
+  return `
+    <a class="quote-tweet" href="${escapeAttr(q.url || "#")}" target="_blank" rel="noopener">
+      <div class="quote-header">
+        <div class="quote-avatar">${avatar}</div>
+        <span class="quote-name">${escapeHtml(author.name || "?")}${verifiedBadge}</span>
+        <span class="quote-handle">@${escapeHtml(author.username || "?")}</span>
+        <span class="quote-sep">·</span>
+        <span class="quote-date">${escapeHtml(formatRelative(q.created_at))}</span>
+      </div>
+      <div class="quote-text">${renderText(q)}</div>
+      ${renderMedia(q.media)}
+    </a>
+  `;
+}
+
+function renderText(t) {
+  let text = t.text || "";
+  if (Array.isArray(t.media) && t.media.length > 0) {
+    for (const m of t.media) {
+      if (m.url) text = text.split(m.url).join("");
+    }
+  }
+  text = text.trim();
+
+  const urlMap = new Map();
+  for (const u of (t.urls || [])) {
+    if (u && u.url) {
+      urlMap.set(u.url, {
+        display: u.display_url || u.expanded_url || u.url,
+        expanded: u.expanded_url || u.url,
+      });
+    }
+  }
+
+  const URL_RE = /https?:\/\/\S+/g;
+  const pieces = [];
+  let last = 0;
+  let m;
+  while ((m = URL_RE.exec(text)) !== null) {
+    if (m.index > last) pieces.push({ kind: "text", value: text.slice(last, m.index) });
+    pieces.push({ kind: "url", value: m[0] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) pieces.push({ kind: "text", value: text.slice(last) });
+
+  return pieces.map((p) => {
+    if (p.kind === "url") {
+      const map = urlMap.get(p.value);
+      const display = map ? map.display : p.value;
+      const expanded = map ? map.expanded : p.value;
+      return `<a href="${escapeAttr(expanded)}" target="_blank" rel="noopener">${escapeHtml(display)}</a>`;
+    }
+    let h = escapeHtml(p.value);
+    h = h.replace(/(^|\s)(@\w+)/g, (full, pre, mention) => {
+      const username = mention.slice(1);
+      return `${pre}<a href="#u/${escapeAttr(username)}" data-handle="${escapeAttr(username)}">${escapeHtml(mention)}</a>`;
+    });
+    h = h.replace(/(^|\s)(#[\wÀ-ÿĀ-ɏ一-鿿_]+)/g, (full, pre, tag) => {
+      const slug = tag.slice(1);
+      return `${pre}<a href="https://x.com/hashtag/${escapeAttr(slug)}" target="_blank" rel="noopener">${escapeHtml(tag)}</a>`;
+    });
+    return h;
+  }).join("");
+}
+
+function renderMedia(media) {
+  if (!Array.isArray(media) || media.length === 0) return "";
+  const items = media.slice(0, 4);
+  const count = items.length;
+  return `<div class="media-grid count-${count}">${items.map((m) => {
+    const src = m.media_url || "";
+    const isVideo = m.type === "video" || m.type === "animated_gif";
+    return `
+      <div class="media-item">
+        <img src="${escapeAttr(src)}" alt="" loading="lazy">
+        ${isVideo ? `<span class="video-badge">${ICONS.video} ${m.type === "animated_gif" ? "GIF" : "VIDEO"}</span>` : ""}
+      </div>
+    `;
+  }).join("")}</div>`;
+}
+
+function renderUrlCard(t) {
+  if (Array.isArray(t.media) && t.media.length > 0) return "";
+  if (t.quoted_tweet) return "";
+  if (!Array.isArray(t.urls) || t.urls.length === 0) return "";
+  const u = t.urls.find((u) => {
+    const e = u.expanded_url || "";
+    return e && !/^https?:\/\/(x\.com|twitter\.com)/i.test(e);
+  });
+  if (!u) return "";
+  const display = u.display_url || u.expanded_url || u.url;
+  const href = u.expanded_url || u.url;
+  return `
+    <a class="url-card" href="${escapeAttr(href)}" target="_blank" rel="noopener">
+      <div class="url-card-link">${escapeHtml(display)}</div>
+    </a>
+  `;
+}
+
+function badgeFor(author) {
+  if (!author) return "";
+  if (author.verified) return ICONS.verified_gold;
+  if (author.is_blue_verified) return ICONS.verified_blue;
+  return "";
+}
+
+function upgradeAvatar(url) {
+  return url ? url.replace("_normal.", "_bigger.") : url;
+}
+
+// ---------------------------------------------------------------------------
+// Click delegation
+// ---------------------------------------------------------------------------
+
+async function onContentClick(ev) {
+  // Profile link in @mention or "responding to" anchor
+  const anchorHandle = ev.target.closest("a[data-handle]");
+  if (anchorHandle) {
+    ev.preventDefault();
+    navigateProfile(anchorHandle.dataset.handle);
+    return;
+  }
+
   const action = ev.target.closest("[data-action]");
   if (!action) return;
   const tweetEl = action.closest("[data-tweet-id]");
-  if (!tweetEl) return;
-  const tweetId = tweetEl.getAttribute("data-tweet-id");
+  const tweetId = tweetEl?.getAttribute("data-tweet-id");
 
-  if (action.dataset.action === "toggle-replies") {
-    if (REPLIES_OPEN.has(tweetId)) {
-      REPLIES_OPEN.delete(tweetId);
-      const el = tweetEl.querySelector(".replies-thread");
-      if (el) el.remove();
-    } else {
-      REPLIES_OPEN.add(tweetId);
-      await renderReplies(tweetEl, tweetId, false);
-    }
-  } else if (action.dataset.action === "refresh-replies") {
-    await renderReplies(tweetEl, tweetId, true);
-  } else if (action.dataset.action === "mark-seen") {
-    markAllAsSeen();
+  switch (action.dataset.action) {
+    case "profile":
+      ev.preventDefault();
+      navigateProfile(action.dataset.handle);
+      return;
+    case "toggle-replies":
+      if (!tweetId) return;
+      if (REPLIES_OPEN.has(tweetId)) {
+        REPLIES_OPEN.delete(tweetId);
+        tweetEl.querySelector(".replies-thread")?.remove();
+      } else {
+        REPLIES_OPEN.add(tweetId);
+        await renderRepliesInto(tweetEl, tweetId, false);
+      }
+      return;
+    case "refresh-replies":
+      if (!tweetId) return;
+      await renderRepliesInto(tweetEl, tweetId, true);
+      return;
+    case "toggle-compose":
+      if (!tweetId) return;
+      if (COMPOSE_OPEN.has(tweetId)) {
+        COMPOSE_OPEN.delete(tweetId);
+        tweetEl.querySelector(".reply-compose")?.remove();
+      } else {
+        COMPOSE_OPEN.add(tweetId);
+        renderComposeInto(tweetEl, tweetId);
+      }
+      return;
+    case "submit-reply":
+      await submitReply(tweetEl, tweetId);
+      return;
+    case "toggle-like":
+      await toggleAction(tweetEl, tweetId, "like");
+      return;
+    case "toggle-retweet":
+      await toggleAction(tweetEl, tweetId, "retweet");
+      return;
+    case "toggle-bookmark":
+      await toggleAction(tweetEl, tweetId, "bookmark");
+      return;
+    case "mark-seen":
+      ev.preventDefault();
+      markAllAsSeen();
+      return;
   }
 }
 
-async function renderReplies(tweetEl, tweetId, refresh) {
+// ---------------------------------------------------------------------------
+// Replies thread
+// ---------------------------------------------------------------------------
+
+async function renderRepliesInto(tweetEl, tweetId, refresh) {
   let container = tweetEl.querySelector(".replies-thread");
   if (!container) {
     container = document.createElement("div");
@@ -177,13 +670,11 @@ async function renderReplies(tweetEl, tweetId, refresh) {
       <div class="replies-empty">Sin comentarios</div>
       <div class="replies-actions">
         <button class="btn-link" data-action="refresh-replies">Buscar comentarios en X</button>
-      </div>
-    `;
+      </div>`;
     return;
   }
 
-  container.innerHTML =
-    replies.map(renderReply).join("") +
+  container.innerHTML = replies.map(renderReply).join("") +
     `<div class="replies-actions">
        <button class="btn-link" data-action="refresh-replies">${data.from_cache ? "Recargar desde X" : "Refrescado"}</button>
      </div>`;
@@ -192,16 +683,14 @@ async function renderReplies(tweetEl, tweetId, refresh) {
 function renderReply(t) {
   const author = t.author || {};
   const m = t.metrics || {};
-  const avatar = author.avatar
-    ? `<img src="${escapeAttr(upgradeAvatar(author.avatar))}" loading="lazy">`
-    : "";
+  const avatar = author.avatar ? `<img src="${escapeAttr(upgradeAvatar(author.avatar))}" loading="lazy">` : "";
   return `
     <div class="reply-card">
-      <div class="reply-avatar">${avatar}</div>
+      <div class="reply-avatar" data-action="profile" data-handle="${escapeAttr(author.username || "")}">${avatar}</div>
       <div class="reply-body">
         <div class="reply-header">
-          <span class="reply-name">${escapeHtml(author.name || "?")}${badgeFor(author)}</span>
-          <span class="reply-handle">@${escapeHtml(author.username || "?")}</span>
+          <span class="reply-name" data-action="profile" data-handle="${escapeAttr(author.username || "")}">${escapeHtml(author.name || "?")}${badgeFor(author)}</span>
+          <span class="reply-handle" data-action="profile" data-handle="${escapeAttr(author.username || "")}">@${escapeHtml(author.username || "?")}</span>
           <span class="reply-date">· ${escapeHtml(formatRelative(t.created_at))}</span>
         </div>
         <div class="reply-text">${renderText(t)}</div>
@@ -217,351 +706,174 @@ function renderReply(t) {
 }
 
 // ---------------------------------------------------------------------------
-// "New tweet" tracking
+// Compose
 // ---------------------------------------------------------------------------
 
-function getLastSeenAt() {
-  return localStorage.getItem(LAST_SEEN_KEY) || "1970-01-01T00:00:00Z";
+function renderComposeInto(tweetEl, tweetId) {
+  const wrap = document.createElement("div");
+  wrap.className = "reply-compose";
+  wrap.innerHTML = `
+    <textarea placeholder="Escribe tu respuesta..." maxlength="280"></textarea>
+    <div class="reply-compose-bar">
+      <span class="reply-counter">0 / 280</span>
+      <button class="btn-primary" data-action="submit-reply">Responder</button>
+    </div>
+  `;
+  tweetEl.querySelector(".tweet-body").appendChild(wrap);
+  const ta = wrap.querySelector("textarea");
+  const counter = wrap.querySelector(".reply-counter");
+  ta.focus();
+  ta.addEventListener("input", () => {
+    const n = ta.value.length;
+    counter.textContent = `${n} / 280`;
+    counter.classList.toggle("over", n > 280);
+  });
 }
 
+async function submitReply(tweetEl, tweetId) {
+  const wrap = tweetEl.querySelector(".reply-compose");
+  if (!wrap) return;
+  const ta = wrap.querySelector("textarea");
+  const btn = wrap.querySelector(".btn-primary");
+  const text = ta.value.trim();
+  if (!text) {
+    showToast("Escribe algo primero", "error");
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = "Enviando…";
+  try {
+    const resp = await fetch(`/api/tweets/${tweetId}/reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!resp.ok) throw new Error(await resp.text() || `HTTP ${resp.status}`);
+    showToast("✓ Respuesta enviada", "success");
+    COMPOSE_OPEN.delete(tweetId);
+    wrap.remove();
+    // Bump reply count in UI
+    const replyAction = tweetEl.querySelector('.action-reply span');
+    if (replyAction) {
+      const prev = parseInt(replyAction.textContent) || 0;
+      replyAction.textContent = formatNum(prev + 1);
+    }
+  } catch (e) {
+    showToast(`Error: ${e.message}`, "error");
+    btn.disabled = false;
+    btn.textContent = "Responder";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Like / RT / Bookmark
+// ---------------------------------------------------------------------------
+
+async function toggleAction(tweetEl, tweetId, kind) {
+  const btn = tweetEl.querySelector(`.action-${kind}`);
+  if (!btn) return;
+  const wasActive = btn.classList.contains("is-active");
+  // Optimistic UI
+  btn.classList.toggle("is-active", !wasActive);
+  const span = btn.querySelector("span");
+  if (span) {
+    const cur = parseInt(span.textContent) || 0;
+    span.textContent = formatNum(wasActive ? Math.max(0, cur - 1) : cur + 1);
+  }
+  if (kind === "like" || kind === "bookmark") {
+    const svg = wasActive ? ICONS[kind] : ICONS[`${kind}_filled`];
+    btn.innerHTML = svg + (span ? span.outerHTML : "");
+  }
+
+  const method = wasActive ? "DELETE" : "POST";
+  try {
+    const resp = await fetch(`/api/tweets/${tweetId}/${kind}`, { method });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  } catch (e) {
+    // Roll back optimistic update
+    btn.classList.toggle("is-active", wasActive);
+    const span2 = btn.querySelector("span");
+    if (span2) {
+      const cur = parseInt(span2.textContent) || 0;
+      span2.textContent = formatNum(wasActive ? cur + 1 : Math.max(0, cur - 1));
+    }
+    showToast(`Error: ${e.message}`, "error");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Profile
+// ---------------------------------------------------------------------------
+
+async function renderProfile() {
+  // Hide tabs / controls while in profile
+  tabsEl.style.display = "none";
+  controlsEl.style.display = "none";
+
+  const handle = route.handle;
+  contentEl.innerHTML = `
+    <div class="profile-back" data-action="back">${ICONS.back} Volver</div>
+    <div class="spinner">Cargando @${escapeHtml(handle)}…</div>
+  `;
+  contentEl.querySelector('[data-action="back"]').addEventListener("click", () => history.back());
+
+  let user, tweets;
+  try {
+    const [uResp, tResp] = await Promise.all([
+      fetch(`/api/users/${encodeURIComponent(handle)}`),
+      fetch(`/api/users/${encodeURIComponent(handle)}/tweets?max=40`),
+    ]);
+    if (!uResp.ok) throw new Error(`Usuario no encontrado (${uResp.status})`);
+    user = await uResp.json();
+    tweets = tResp.ok ? (await tResp.json()).tweets || [] : [];
+  } catch (e) {
+    contentEl.innerHTML = `
+      <div class="profile-back" data-action="back">${ICONS.back} Volver</div>
+      <div class="error">${escapeHtml(e.message)}</div>
+    `;
+    contentEl.querySelector('[data-action="back"]').addEventListener("click", () => history.back());
+    return;
+  }
+
+  const banner = user.banner ? `style="background-image:url('${escapeAttr(user.banner)}')"` : "";
+  const avatar = user.avatar
+    ? `<img src="${escapeAttr(upgradeAvatar(user.avatar).replace("_bigger.", "_400x400."))}" alt="">`
+    : "";
+
+  contentEl.innerHTML = `
+    <div class="profile-back" data-action="back">${ICONS.back} Volver</div>
+    <div class="profile-banner" ${banner}></div>
+    <div class="profile-header">
+      <div class="profile-avatar">${avatar}</div>
+      <div class="profile-name">${escapeHtml(user.name || handle)}${badgeFor(user)}</div>
+      <div class="profile-handle">@${escapeHtml(user.username || handle)}</div>
+      ${user.description ? `<div class="profile-description">${escapeHtml(user.description)}</div>` : ""}
+      ${user.location || user.url ? `<div class="profile-meta">
+        ${user.location ? `📍 ${escapeHtml(user.location)}` : ""}
+        ${user.url ? `🔗 <a href="${escapeAttr(user.url)}" target="_blank" rel="noopener">${escapeHtml(user.url)}</a>` : ""}
+      </div>` : ""}
+      <div class="profile-stats">
+        <span><strong>${formatNum(user.following_count)}</strong> <span class="label">Siguiendo</span></span>
+        <span><strong>${formatNum(user.followers_count)}</strong> <span class="label">Seguidores</span></span>
+        <span><strong>${formatNum(user.statuses_count)}</strong> <span class="label">Tweets</span></span>
+      </div>
+    </div>
+    ${tweets.map(renderTweet).join("")}
+  `;
+  contentEl.querySelector('[data-action="back"]').addEventListener("click", () => history.back());
+}
+
+// ---------------------------------------------------------------------------
+// New-tweet seen marker
+// ---------------------------------------------------------------------------
+
 function markAllAsSeen() {
-  // Use the freshest first_seen_at from the currently rendered tweets.
   let latest = "";
   for (const t of currentTweets) {
-    const s = t._first_seen_at;
-    if (s && s > latest) latest = s;
+    if (t._first_seen_at && t._first_seen_at > latest) latest = t._first_seen_at;
   }
   if (latest) localStorage.setItem(LAST_SEEN_KEY, latest);
   render();
-}
-
-function populateSnapshots() {
-  const opts = [
-    { value: "all_latest", label: "Último de cada fuente (combinado)" },
-    { value: "all", label: "Todos los snapshots (combinado)" },
-  ];
-  for (const s of allSnapshots) {
-    const dateStr = new Date(s.fetched_at).toLocaleString();
-    opts.push({
-      value: `id:${s.id}`,
-      label: `${dateStr} — ${s.source} (@${s.username}) — ${s.count} tweets`,
-    });
-  }
-  snapshotSelect.innerHTML = opts
-    .map((o) => `<option value="${escapeAttr(o.value)}">${escapeHtml(o.label)}</option>`)
-    .join("");
-}
-
-// ---------------------------------------------------------------------------
-// Loading
-// ---------------------------------------------------------------------------
-
-async function loadCurrentSelection() {
-  const value = snapshotSelect.value;
-  const sourceWanted = sourceFilter.value;
-
-  tweetsEl.innerHTML = '<div class="spinner">Cargando…</div>';
-
-  const params = new URLSearchParams();
-  if (value === "all" || value === "all_latest") {
-    params.set("selection", value);
-  } else if (value.startsWith("id:")) {
-    params.set("selection", "snapshot");
-    params.set("id", value.slice(3));
-  }
-  if (sourceWanted !== "all") params.set("source", sourceWanted);
-
-  try {
-    const resp = await fetch(`/api/tweets?${params.toString()}`, { cache: "no-store" });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    currentTweets = await resp.json();
-  } catch (e) {
-    showError(`Error cargando tweets: ${e.message}`);
-    return;
-  }
-  render();
-}
-
-// ---------------------------------------------------------------------------
-// Filtering + rendering
-// ---------------------------------------------------------------------------
-
-function applyFilters(tweets) {
-  let filtered = tweets;
-
-  const type = typeFilter.value;
-  if (type === "original") {
-    filtered = filtered.filter(
-      (t) => !t.is_retweet && !t.is_reply && !t.is_quote
-    );
-  } else if (type === "retweet") {
-    filtered = filtered.filter((t) => t.is_retweet);
-  } else if (type === "reply") {
-    filtered = filtered.filter((t) => t.is_reply);
-  } else if (type === "quote") {
-    filtered = filtered.filter((t) => t.is_quote);
-  } else if (type === "media") {
-    filtered = filtered.filter((t) => Array.isArray(t.media) && t.media.length > 0);
-  }
-
-  const q = searchInput.value.trim().toLowerCase();
-  if (q) {
-    filtered = filtered.filter((t) => {
-      const haystack = [
-        t.text,
-        t.author?.name,
-        t.author?.username,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(q);
-    });
-  }
-
-  return filtered;
-}
-
-function applySort(tweets) {
-  const mode = sortBy.value;
-  const copy = [...tweets];
-  const numeric = (v) => {
-    if (v == null) return 0;
-    const n = parseInt(String(v).replace(/,/g, ""), 10);
-    return isNaN(n) ? 0 : n;
-  };
-
-  if (mode === "date_desc") {
-    copy.sort((a, b) => parseTwitterDate(b.created_at) - parseTwitterDate(a.created_at));
-  } else if (mode === "date_asc") {
-    copy.sort((a, b) => parseTwitterDate(a.created_at) - parseTwitterDate(b.created_at));
-  } else if (mode === "likes") {
-    copy.sort((a, b) => numeric(b.metrics?.likes) - numeric(a.metrics?.likes));
-  } else if (mode === "retweets") {
-    copy.sort((a, b) => numeric(b.metrics?.retweets) - numeric(a.metrics?.retweets));
-  } else if (mode === "replies") {
-    copy.sort((a, b) => numeric(b.metrics?.replies) - numeric(a.metrics?.replies));
-  } else if (mode === "views") {
-    copy.sort((a, b) => numeric(b.metrics?.views) - numeric(a.metrics?.views));
-  }
-  return copy;
-}
-
-function render() {
-  const filtered = applySort(applyFilters(currentTweets));
-
-  const lastSeen = getLastSeenAt();
-  const newCount = filtered.filter(t => t._first_seen_at && t._first_seen_at > lastSeen).length;
-  const newLabel = newCount > 0 ? ` · <a href="#" data-action="mark-seen" style="color:var(--accent)">${newCount} nuevos</a>` : "";
-  statsEl.innerHTML = `${filtered.length} de ${currentTweets.length} tweets${newLabel}`;
-
-  if (filtered.length === 0) {
-    tweetsEl.innerHTML = '<div class="empty">No hay tweets con estos filtros.</div>';
-    return;
-  }
-
-  tweetsEl.innerHTML = filtered.map(renderTweet).join("");
-}
-
-// ---------------------------------------------------------------------------
-// Tweet rendering
-// ---------------------------------------------------------------------------
-
-function renderTweet(t) {
-  // If retweet, render the underlying tweet but keep the retweet header
-  const isRT = t.is_retweet && t.retweeted_tweet;
-  const display = isRT ? t.retweeted_tweet : t;
-  const retweeter = isRT ? t.author : null;
-
-  const author = display.author || {};
-  const m = display.metrics || {};
-
-  // "New" if first_seen_at is more recent than the user's last-seen marker.
-  const lastSeen = getLastSeenAt();
-  const isNew = !!(t._first_seen_at && t._first_seen_at > lastSeen);
-
-  let header = "";
-  if (retweeter) {
-    header = `<div class="tweet-context">${ICONS.retweet_small} ${escapeHtml(retweeter.name || retweeter.username || "")} retwitteó</div>`;
-  }
-
-  let replyingTo = "";
-  if (display.is_reply && Array.isArray(display.user_mentions) && display.user_mentions.length > 0) {
-    const m0 = display.user_mentions[0];
-    replyingTo = `<div class="replying-to">Respondiendo a <a href="https://x.com/${escapeAttr(m0.username || "")}" target="_blank" rel="noopener">@${escapeHtml(m0.username || "")}</a></div>`;
-  }
-
-  const verifiedBadge = badgeFor(author);
-  const text = renderText(display);
-  const media = renderMedia(display.media);
-  const quote = display.quoted_tweet ? renderQuote(display.quoted_tweet) : "";
-  const card = renderUrlCard(display);
-  const langBadge = display.lang ? `<span class="lang-badge">${escapeHtml(display.lang)}</span>` : "";
-  const newPill = isNew ? `<span class="new-pill">nuevo</span>` : "";
-
-  const avatar = author.avatar
-    ? `<img src="${escapeAttr(upgradeAvatar(author.avatar))}" alt="" loading="lazy">`
-    : `<div style="width:100%;height:100%;background:#2f3336;"></div>`;
-
-  return `
-    <article class="tweet ${isNew ? "is-new" : ""}" data-tweet-id="${escapeAttr(display.id)}">
-      <div class="tweet-avatar">${avatar}</div>
-      <div class="tweet-body">
-        ${header}
-        <div class="tweet-header">
-          <a class="tweet-name" href="https://x.com/${escapeAttr(author.username || "")}" target="_blank" rel="noopener">${escapeHtml(author.name || "?")}${verifiedBadge}</a>
-          <span class="tweet-handle">@${escapeHtml(author.username || "?")}</span>
-          <span class="tweet-sep">·</span>
-          <a class="tweet-date" href="${escapeAttr(display.url || "#")}" target="_blank" rel="noopener" title="${escapeAttr(formatFullDate(display.created_at))}">${escapeHtml(formatRelative(display.created_at))}</a>
-          ${langBadge}
-          ${newPill}
-        </div>
-        ${replyingTo}
-        <div class="tweet-text">${text}</div>
-        ${media}
-        ${quote}
-        ${card}
-        <div class="tweet-actions">
-          <span class="tweet-action action-reply clickable" data-action="toggle-replies" title="Ver comentarios">${ICONS.reply}<span>${formatNum(m.replies)}</span></span>
-          <span class="tweet-action action-retweet">${ICONS.retweet}<span>${formatNum(m.retweets)}</span></span>
-          <span class="tweet-action action-like">${ICONS.like}<span>${formatNum(m.likes)}</span></span>
-          <span class="tweet-action action-bookmark">${ICONS.bookmark}<span>${formatNum(m.bookmarks)}</span></span>
-          <span class="tweet-action action-views">${ICONS.views}<span>${formatNum(m.views)}</span></span>
-        </div>
-      </div>
-    </article>
-  `;
-}
-
-function renderQuote(q) {
-  const author = q.author || {};
-  const verifiedBadge = badgeFor(author);
-  const avatar = author.avatar
-    ? `<img src="${escapeAttr(upgradeAvatar(author.avatar))}" alt="" loading="lazy">`
-    : "";
-
-  return `
-    <a class="quote-tweet" href="${escapeAttr(q.url || "#")}" target="_blank" rel="noopener" style="text-decoration:none;display:block;">
-      <div class="quote-header">
-        <div class="quote-avatar">${avatar}</div>
-        <span class="quote-name">${escapeHtml(author.name || "?")}${verifiedBadge}</span>
-        <span class="quote-handle">@${escapeHtml(author.username || "?")}</span>
-        <span class="quote-sep">·</span>
-        <span class="quote-date">${escapeHtml(formatRelative(q.created_at))}</span>
-      </div>
-      <div class="quote-text">${renderText(q)}</div>
-      ${renderMedia(q.media)}
-    </a>
-  `;
-}
-
-function renderText(t) {
-  let text = t.text || "";
-
-  // Strip t.co media URLs that appear trailing the text (X already shows the
-  // image inline, the URL is just plumbing).
-  if (Array.isArray(t.media) && t.media.length > 0) {
-    for (const m of t.media) {
-      if (m.url) text = text.split(m.url).join("");
-    }
-  }
-  text = text.trim();
-
-  // Map of raw URL -> { display, expanded } for the t.co shorteners that came
-  // attached to this tweet. Anything not in the map is rendered as a bare link.
-  const urlMap = new Map();
-  for (const u of (t.urls || [])) {
-    if (u && u.url) {
-      urlMap.set(u.url, {
-        display: u.display_url || u.expanded_url || u.url,
-        expanded: u.expanded_url || u.url,
-      });
-    }
-  }
-
-  // Tokenize on URLs first so the per-piece replacements never see content
-  // that's already been wrapped in an <a> tag.
-  const URL_RE = /https?:\/\/\S+/g;
-  const pieces = [];
-  let last = 0;
-  let m;
-  while ((m = URL_RE.exec(text)) !== null) {
-    if (m.index > last) pieces.push({ kind: "text", value: text.slice(last, m.index) });
-    pieces.push({ kind: "url", value: m[0] });
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) pieces.push({ kind: "text", value: text.slice(last) });
-
-  return pieces.map((p) => {
-    if (p.kind === "url") {
-      const mapping = urlMap.get(p.value);
-      const display = mapping ? mapping.display : p.value;
-      const expanded = mapping ? mapping.expanded : p.value;
-      return `<a href="${escapeAttr(expanded)}" target="_blank" rel="noopener">${escapeHtml(display)}</a>`;
-    }
-    // Plain text: escape, then linkify mentions and hashtags.
-    let h = escapeHtml(p.value);
-    h = h.replace(/(^|\s)(@\w+)/g, (full, pre, mention) => {
-      const username = mention.slice(1);
-      return `${pre}<a href="https://x.com/${escapeAttr(username)}" target="_blank" rel="noopener">${escapeHtml(mention)}</a>`;
-    });
-    h = h.replace(/(^|\s)(#[\wÀ-ÿĀ-ɏ一-鿿_]+)/g, (full, pre, tag) => {
-      const slug = tag.slice(1);
-      return `${pre}<a href="https://x.com/hashtag/${escapeAttr(slug)}" target="_blank" rel="noopener">${escapeHtml(tag)}</a>`;
-    });
-    return h;
-  }).join("");
-}
-
-function renderMedia(media) {
-  if (!Array.isArray(media) || media.length === 0) return "";
-  const items = media.slice(0, 4);
-  const count = items.length;
-  const html = items.map((m) => {
-    const src = m.media_url || "";
-    const isVideo = m.type === "video" || m.type === "animated_gif";
-    return `
-      <div class="media-item">
-        <img src="${escapeAttr(src)}" alt="" loading="lazy">
-        ${isVideo ? `<span class="video-badge">${ICONS.video} ${m.type === "animated_gif" ? "GIF" : "VIDEO"}</span>` : ""}
-      </div>
-    `;
-  }).join("");
-  return `<div class="media-grid count-${count}">${html}</div>`;
-}
-
-function renderUrlCard(t) {
-  // Only show a card when there's a non-Twitter URL and no media or quote
-  if (Array.isArray(t.media) && t.media.length > 0) return "";
-  if (t.quoted_tweet) return "";
-  if (!Array.isArray(t.urls) || t.urls.length === 0) return "";
-
-  // Take the first non-x.com link
-  const u = t.urls.find((u) => {
-    const e = u.expanded_url || "";
-    return e && !/^https?:\/\/(x\.com|twitter\.com)/i.test(e);
-  });
-  if (!u) return "";
-
-  const display = u.display_url || u.expanded_url || u.url;
-  const href = u.expanded_url || u.url;
-  return `
-    <a class="url-card" href="${escapeAttr(href)}" target="_blank" rel="noopener">
-      <div class="url-card-link">${escapeHtml(display)}</div>
-    </a>
-  `;
-}
-
-function badgeFor(author) {
-  if (!author) return "";
-  if (author.verified) return ICONS.verified_gold;
-  if (author.is_blue_verified) return ICONS.verified_blue;
-  return "";
-}
-
-function upgradeAvatar(url) {
-  // Twitter serves _normal (48px) by default; bigger looks better on retina
-  return url.replace("_normal.", "_bigger.");
 }
 
 // ---------------------------------------------------------------------------
@@ -576,10 +888,7 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
-function escapeAttr(str) {
-  return escapeHtml(str);
-}
+function escapeAttr(str) { return escapeHtml(str); }
 
 function parseTwitterDate(s) {
   if (!s) return 0;
@@ -608,8 +917,7 @@ function formatRelative(s) {
 
 function formatFullDate(s) {
   const t = parseTwitterDate(s);
-  if (!t) return "";
-  return new Date(t).toLocaleString();
+  return t ? new Date(t).toLocaleString() : "";
 }
 
 function formatNum(v) {
@@ -622,7 +930,15 @@ function formatNum(v) {
 }
 
 function showError(msg) {
-  tweetsEl.innerHTML = `<div class="error">${msg}</div>`;
+  contentEl.innerHTML = `<div class="error">${msg}</div>`;
+}
+
+function showToast(msg, kind = "") {
+  const el = document.createElement("div");
+  el.className = `toast ${kind}`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
 }
 
 init();
