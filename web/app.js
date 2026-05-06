@@ -1,9 +1,6 @@
-// Three operating modes:
-//   1. Live API (Railway / Flask app)  -> /api/snapshots, /api/tweets
-//   2. Static dev (python -m http.server in repo) -> ../data/*.json
-//   3. Standalone (single HTML file)   -> in-memory data via fetch shim
-//
-// We probe /api/snapshots once at startup and pick the right mode.
+// Talks to the Flask app at /api/snapshots and /api/tweets, which proxy
+// to Supabase server-side. No JSON files on disk — Supabase is the only
+// source of truth.
 
 const $ = (sel) => document.querySelector(sel);
 const tweetsEl = $("#tweets");
@@ -16,7 +13,6 @@ const statsEl = $("#stats");
 
 let allSnapshots = [];
 let currentTweets = [];
-let useApi = false;
 
 // ---------------------------------------------------------------------------
 // SVG icons (Twitter-style)
@@ -38,34 +34,13 @@ const ICONS = {
 // Init
 // ---------------------------------------------------------------------------
 
-async function detectMode() {
-  try {
-    const resp = await fetch("/api/snapshots", { cache: "no-store" });
-    if (resp.ok) {
-      const data = await resp.json();
-      if (Array.isArray(data)) {
-        useApi = true;
-        return data;
-      }
-    }
-  } catch (_) { /* fall through */ }
-
-  // No live API — fall back to data/index.json (works in standalone mode too,
-  // because the standalone build injects a fetch shim for that path).
-  try {
-    const resp = await fetch("../data/index.json", { cache: "no-store" });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    return await resp.json();
-  } catch (e) {
-    throw new Error(`No hay API ni data/index.json accesibles: ${e.message}`);
-  }
-}
-
 async function init() {
   try {
-    allSnapshots = await detectMode();
+    const resp = await fetch("/api/snapshots", { cache: "no-store" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    allSnapshots = await resp.json();
   } catch (e) {
-    showError(`Error cargando snapshots: ${e.message}.`);
+    showError(`Error contactando con la API: ${e.message}`);
     return;
   }
 
@@ -94,10 +69,8 @@ function populateSnapshots() {
   ];
   for (const s of allSnapshots) {
     const dateStr = new Date(s.fetched_at).toLocaleString();
-    // In API mode we key by snapshot id; in file mode by file path.
-    const value = useApi ? `id:${s.id}` : s.file;
     opts.push({
-      value,
+      value: `id:${s.id}`,
       label: `${dateStr} — ${s.source} (@${s.username}) — ${s.count} tweets`,
     });
   }
@@ -116,75 +89,23 @@ async function loadCurrentSelection() {
 
   tweetsEl.innerHTML = '<div class="spinner">Cargando…</div>';
 
-  if (useApi) {
-    // Live API mode — let the server resolve the selection.
-    const params = new URLSearchParams();
-    if (value === "all" || value === "all_latest") {
-      params.set("selection", value);
-    } else if (value.startsWith("id:")) {
-      params.set("selection", "snapshot");
-      params.set("id", value.slice(3));
-    }
-    if (sourceWanted !== "all") params.set("source", sourceWanted);
+  const params = new URLSearchParams();
+  if (value === "all" || value === "all_latest") {
+    params.set("selection", value);
+  } else if (value.startsWith("id:")) {
+    params.set("selection", "snapshot");
+    params.set("id", value.slice(3));
+  }
+  if (sourceWanted !== "all") params.set("source", sourceWanted);
 
-    try {
-      const resp = await fetch(`/api/tweets?${params.toString()}`, { cache: "no-store" });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      currentTweets = await resp.json();
-    } catch (e) {
-      showError(`Error cargando tweets: ${e.message}`);
-      return;
-    }
-    render();
+  try {
+    const resp = await fetch(`/api/tweets?${params.toString()}`, { cache: "no-store" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    currentTweets = await resp.json();
+  } catch (e) {
+    showError(`Error cargando tweets: ${e.message}`);
     return;
   }
-
-  // File / standalone mode — load JSON snapshot files directly.
-  let snapshotsToLoad = [];
-  if (value === "all") {
-    snapshotsToLoad = allSnapshots;
-  } else if (value === "all_latest") {
-    const seen = new Set();
-    for (const s of allSnapshots) {
-      if (!seen.has(s.source)) {
-        seen.add(s.source);
-        snapshotsToLoad.push(s);
-      }
-    }
-  } else {
-    snapshotsToLoad = allSnapshots.filter((s) => s.file === value);
-  }
-
-  if (sourceWanted !== "all") {
-    snapshotsToLoad = snapshotsToLoad.filter((s) => s.source === sourceWanted);
-  }
-
-  if (snapshotsToLoad.length === 0) {
-    currentTweets = [];
-    render();
-    return;
-  }
-
-  const all = [];
-  for (const s of snapshotsToLoad) {
-    try {
-      const resp = await fetch(`../${s.file}`);
-      const data = await resp.json();
-      for (const t of data.tweets) {
-        all.push({ ...t, _source: data.source, _fetched_at: data.fetched_at });
-      }
-    } catch (e) {
-      console.error(`Failed to load ${s.file}:`, e);
-    }
-  }
-
-  const seen = new Set();
-  currentTweets = all.filter((t) => {
-    if (seen.has(t.id)) return false;
-    seen.add(t.id);
-    return true;
-  });
-
   render();
 }
 

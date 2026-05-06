@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
 """
-Fetches tweets from X/Twitter using twikit (no API key, no browser needed).
-Saves results as JSON in data/YYYY-MM-DD/.
+Fetches tweets from X/Twitter using twikit and stores everything directly in
+Supabase. The only thing that touches local disk is the session cookie file.
 """
 
+import argparse
 import asyncio
-import json
 import os
 import re
 import sys
-import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 
 import twikit
 from dotenv import load_dotenv
+from supabase import Client, create_client
 
 load_dotenv()
 
-DATA_DIR = Path(__file__).parent.parent / "data"
-COOKIES_FILE = DATA_DIR / ".cookies.json"
+# Local cookie file (session token, not tweet data). Created on first run from
+# TWITTER_COOKIES_JSON if missing, refreshed by twikit on subsequent runs.
+COOKIES_FILE = Path(__file__).parent.parent / "data" / ".cookies.json"
 
 
 # ---------------------------------------------------------------------------
-# Patch: twikit 2.3.3's regex for finding the ondemand.s file hash is broken
+# Patch: twikit's regex for finding the ondemand.s file hash is broken
 # because X changed the HTML layout. We override get_indices to use webpack's
 # chunk-id -> hash map directly.
 # ---------------------------------------------------------------------------
@@ -56,9 +57,8 @@ ClientTransaction.get_indices = _patched_get_indices
 
 # ---------------------------------------------------------------------------
 # Patch: twikit's User.__init__ assumes some legacy fields are always present,
-# but X is gradually moving them to other top-level keys (`core`, `privacy`,
-# etc.) and dropping the old ones. We replace __init__ with a tolerant
-# version that uses .get() everywhere so it works against the live API.
+# but X is gradually moving them to other top-level keys. Replace with a
+# tolerant version that uses .get() everywhere.
 # ---------------------------------------------------------------------------
 
 from twikit.user import User as _User
@@ -119,8 +119,7 @@ _User.__init__ = _patched_user_init
 async def get_client() -> twikit.Client:
     client = twikit.Client(language="en-US")
 
-    # If TWITTER_COOKIES_JSON is set (e.g. on Railway / GitHub Actions), write
-    # it to disk so twikit can load it. Existing files take priority.
+    # Hydrate cookies from env var (Railway / GitHub Actions) when no file.
     if not COOKIES_FILE.exists() and os.getenv("TWITTER_COOKIES_JSON"):
         COOKIES_FILE.parent.mkdir(parents=True, exist_ok=True)
         COOKIES_FILE.write_text(os.environ["TWITTER_COOKIES_JSON"])
@@ -135,14 +134,14 @@ async def get_client() -> twikit.Client:
     username = os.getenv("TWITTER_USERNAME")
 
     if not email or not password or not username:
-        print("ERROR: set TWITTER_EMAIL, TWITTER_PASSWORD, TWITTER_USERNAME in .env")
+        print("ERROR: no cookies and TWITTER_EMAIL/PASSWORD/USERNAME not set in .env")
         sys.exit(1)
 
     print(f"Logging in as @{username}...")
     await client.login(auth_info_1=email, auth_info_2=username, password=password)
     COOKIES_FILE.parent.mkdir(parents=True, exist_ok=True)
     client.save_cookies(str(COOKIES_FILE))
-    print("Login successful, session saved.")
+    print("Login successful, cookies saved.")
     return client
 
 
@@ -182,8 +181,7 @@ def tweet_to_dict(tweet, depth: int = 0) -> dict:
     media_list = [_media_to_dict(m) for m in (getattr(tweet, "media", []) or [])]
 
     urls_list = []
-    raw_urls = getattr(tweet, "urls", None) or []
-    for u in raw_urls:
+    for u in (getattr(tweet, "urls", None) or []):
         if isinstance(u, dict):
             urls_list.append({
                 "url": u.get("url"),
@@ -202,9 +200,7 @@ def tweet_to_dict(tweet, depth: int = 0) -> dict:
 
     hashtags = list(getattr(tweet, "hashtags", []) or [])
 
-    # Recursively serialize quoted / retweeted (one level only)
-    quoted = None
-    retweeted = None
+    quoted = retweeted = None
     if depth < 1:
         q = getattr(tweet, "quote", None)
         if q is not None:
@@ -250,7 +246,6 @@ async def fetch_timeline(client: twikit.Client, max_tweets: int = 100) -> list[d
     print(f"Fetching home timeline (target: {max_tweets})...")
     tweets = []
     results = await client.get_timeline(count=20)
-
     while results and len(tweets) < max_tweets:
         for t in results:
             tweets.append(tweet_to_dict(t))
@@ -261,7 +256,6 @@ async def fetch_timeline(client: twikit.Client, max_tweets: int = 100) -> list[d
             results = await results.next()
         except Exception:
             break
-
     print(f"  -> {len(tweets)} timeline tweets fetched.")
     return tweets[:max_tweets]
 
@@ -271,7 +265,6 @@ async def fetch_own_tweets(client: twikit.Client, username: str, max_tweets: int
     user = await client.get_user_by_screen_name(username)
     tweets = []
     results = await user.get_tweets("Tweets", count=20)
-
     while results and len(tweets) < max_tweets:
         for t in results:
             tweets.append(tweet_to_dict(t))
@@ -282,95 +275,163 @@ async def fetch_own_tweets(client: twikit.Client, username: str, max_tweets: int
             results = await results.next()
         except Exception:
             break
-
     print(f"  -> {len(tweets)} own tweets fetched.")
     return tweets[:max_tweets]
 
 
 # ---------------------------------------------------------------------------
-# Storage
+# Supabase
 # ---------------------------------------------------------------------------
 
-def save_snapshot(tweets: list[dict], source: str, username: str, supabase_client=None):
-    now = datetime.now(timezone.utc)
-    date_str = now.strftime("%Y-%m-%d")
-    ts_str = now.strftime("%Y%m%d_%H%M%S")
+def supabase_client() -> Client:
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
+    if not url or not key:
+        print("ERROR: SUPABASE_URL / SUPABASE_KEY required (set them in .env)")
+        sys.exit(1)
+    return create_client(url, key)
 
-    day_dir = DATA_DIR / date_str
-    day_dir.mkdir(parents=True, exist_ok=True)
 
-    snapshot_file = day_dir / f"{source}_{ts_str}.json"
-    snapshot = {
-        "fetched_at": now.isoformat(),
+def _to_int(v):
+    if v is None or v == "":
+        return None
+    try:
+        return int(str(v).replace(",", ""))
+    except Exception:
+        return None
+
+
+def _parse_twitter_date(s):
+    if not s:
+        return None
+    try:
+        dt = datetime.strptime(s, "%a %b %d %H:%M:%S %z %Y")
+        return dt.astimezone(timezone.utc).isoformat()
+    except Exception:
+        return None
+
+
+def _author_row(author: dict, now_iso: str) -> dict:
+    return {
+        "id": author["id"],
+        "username": author.get("username"),
+        "name": author.get("name"),
+        "avatar": author.get("avatar"),
+        "verified": bool(author.get("verified", False)),
+        "is_blue_verified": bool(author.get("is_blue_verified", False)),
+        "last_seen_at": now_iso,
+    }
+
+
+def _tweet_row(t: dict, now_iso: str) -> dict:
+    author = t.get("author") or {}
+    metrics = t.get("metrics") or {}
+    return {
+        "id": t["id"],
+        "author_id": author.get("id"),
+        "text": t.get("text"),
+        "lang": t.get("lang"),
+        "created_at": _parse_twitter_date(t.get("created_at")),
+        "url": t.get("url"),
+        "is_retweet": bool(t.get("is_retweet")),
+        "is_reply": bool(t.get("is_reply")),
+        "is_quote": bool(t.get("is_quote")),
+        "in_reply_to_id": t.get("in_reply_to_id"),
+        "quoted_tweet_id": (t.get("quoted_tweet") or {}).get("id"),
+        "retweeted_tweet_id": (t.get("retweeted_tweet") or {}).get("id"),
+        "possibly_sensitive": bool(t.get("possibly_sensitive")),
+        "likes": _to_int(metrics.get("likes")) or 0,
+        "retweets": _to_int(metrics.get("retweets")) or 0,
+        "replies": _to_int(metrics.get("replies")) or 0,
+        "quotes": _to_int(metrics.get("quotes")) or 0,
+        "bookmarks": _to_int(metrics.get("bookmarks")) or 0,
+        "views": _to_int(metrics.get("views")),
+        "media": t.get("media") or [],
+        "urls": t.get("urls") or [],
+        "hashtags": t.get("hashtags") or [],
+        "user_mentions": t.get("user_mentions") or [],
+        "raw": t,
+        "last_seen_at": now_iso,
+    }
+
+
+def _chunked(items, size):
+    for i in range(0, len(items), size):
+        yield items[i:i + size]
+
+
+def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
+    if not tweets:
+        print(f"  No {source} tweets to push.")
+        return
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    print(f"  Pushing {len(tweets)} {source} tweets to Supabase...")
+
+    # Authors (top-level + nested), deduplicated
+    authors: dict[str, dict] = {}
+    for t in tweets:
+        for src in (t, t.get("quoted_tweet"), t.get("retweeted_tweet")):
+            if not src:
+                continue
+            a = src.get("author")
+            if a and a.get("id"):
+                authors[a["id"]] = _author_row(a, now_iso)
+    if authors:
+        for chunk in _chunked(list(authors.values()), 200):
+            sb.table("authors").upsert(chunk, on_conflict="id").execute()
+
+    # Tweets (top-level + nested)
+    rows: dict[str, dict] = {}
+    for t in tweets:
+        rows[t["id"]] = _tweet_row(t, now_iso)
+        for nested in (t.get("quoted_tweet"), t.get("retweeted_tweet")):
+            if nested and nested.get("id") and nested["id"] not in rows:
+                rows[nested["id"]] = _tweet_row(nested, now_iso)
+    for chunk in _chunked(list(rows.values()), 200):
+        sb.table("tweets").upsert(chunk, on_conflict="id").execute()
+
+    # Snapshot row
+    snap = sb.table("snapshots").insert({
+        "fetched_at": now_iso,
         "source": source,
         "username": username,
         "count": len(tweets),
-        "tweets": tweets,
-    }
-    with open(snapshot_file, "w", encoding="utf-8") as f:
-        json.dump(snapshot, f, ensure_ascii=False, indent=2)
+    }).execute()
+    snapshot_id = snap.data[0]["id"]
 
-    rel = snapshot_file.relative_to(DATA_DIR.parent)
-    print(f"  Saved {len(tweets)} tweets -> {rel}")
-    _update_index(rel, snapshot)
+    # Bridge rows
+    bridge = [{"snapshot_id": snapshot_id, "tweet_id": t["id"]} for t in tweets]
+    for chunk in _chunked(bridge, 500):
+        sb.table("snapshot_tweets").upsert(chunk).execute()
 
-    if supabase_client is not None and tweets:
-        try:
-            from sync_to_supabase import sync_snapshot
-            meta = {"file": str(rel)}
-            sync_snapshot(supabase_client, meta, snapshot)
-        except Exception as e:
-            print(f"  WARNING: Supabase sync failed: {e}")
-
-
-def _update_index(relative_path: Path, snapshot: dict):
-    index_file = DATA_DIR / "index.json"
-    index = []
-    if index_file.exists():
-        with open(index_file, "r", encoding="utf-8") as f:
-            index = json.load(f)
-    index.append({
-        "file": str(relative_path),
-        "fetched_at": snapshot["fetched_at"],
-        "source": snapshot["source"],
-        "username": snapshot["username"],
-        "count": snapshot["count"],
-    })
-    with open(index_file, "w", encoding="utf-8") as f:
-        json.dump(index, f, ensure_ascii=False, indent=2)
+    print(f"    OK — snapshot id={snapshot_id}")
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int, push_supabase: bool):
+async def run(source: str, max_tweets: int):
     username = os.getenv("TWITTER_USERNAME")
-    client = await get_client()
+    sb = supabase_client()
+    print("Supabase: connected.\n")
 
-    supabase_client = None
-    if push_supabase:
-        sys.path.insert(0, str(Path(__file__).parent))
-        from sync_to_supabase import get_client as get_sb_client
-        supabase_client = get_sb_client()
-        if supabase_client is None:
-            print("Note: Supabase not configured (SUPABASE_URL / SUPABASE_KEY missing) — saving locally only.\n")
-        else:
-            print("Supabase: connected, snapshots will be pushed automatically.\n")
+    client = await get_client()
 
     if source in ("timeline", "both"):
         tweets = await fetch_timeline(client, max_tweets)
-        save_snapshot(tweets, "timeline", username, supabase_client)
+        push_snapshot(sb, tweets, "timeline", username)
 
     if source in ("mine", "both"):
         tweets = await fetch_own_tweets(client, username, max_tweets)
-        save_snapshot(tweets, "mine", username, supabase_client)
+        push_snapshot(sb, tweets, "mine", username)
 
-    print("\nDone. See data/ for the saved files.")
+    print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets via twikit (no API key needed).")
+    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
     parser.add_argument(
         "--source",
         choices=["timeline", "mine", "both"],
@@ -383,13 +444,8 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
-    parser.add_argument(
-        "--no-supabase",
-        action="store_true",
-        help="Skip pushing the snapshot to Supabase (still saves JSON locally).",
-    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max, push_supabase=not args.no_supabase))
+    asyncio.run(run(args.source, args.max))
 
 
 if __name__ == "__main__":

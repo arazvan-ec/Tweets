@@ -60,7 +60,7 @@ def api_snapshots():
     res = (
         sb()
         .table("snapshots")
-        .select("id, fetched_at, source, username, count, file")
+        .select("id, fetched_at, source, username, count")
         .order("fetched_at", desc=True)
         .execute()
     )
