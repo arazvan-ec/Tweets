@@ -53,6 +53,22 @@
 
 <div id="scroll-sentinel" class="scroll-sentinel"></div>
 
+<div id="lightbox" class="lightbox" aria-hidden="true">
+  <button class="lightbox-close" data-action="lb-close" aria-label="Cerrar">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M10.59 12L4.54 5.96l1.42-1.42L12 10.59l6.04-6.05 1.42 1.42L13.41 12l6.05 6.04-1.42 1.42L12 13.41l-6.04 6.05-1.42-1.42L10.59 12z"/></svg>
+  </button>
+  <button class="lightbox-nav lightbox-prev" data-action="lb-prev" aria-label="Anterior">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M14.41 7.41L13 6l-6 6 6 6 1.41-1.41L9.83 12z"/></svg>
+  </button>
+  <button class="lightbox-nav lightbox-next" data-action="lb-next" aria-label="Siguiente">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M9.59 7.41L11 6l6 6-6 6-1.41-1.41L14.17 12z"/></svg>
+  </button>
+  <div class="lightbox-stage" data-action="lb-close">
+    <div class="lightbox-stage-inner" id="lightbox-stage" data-stop-bubble></div>
+  </div>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>

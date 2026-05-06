@@ -71,6 +71,99 @@ const SOURCE_LABEL = {
 };
 
 // ---------------------------------------------------------------------------
+// Lightbox
+// ---------------------------------------------------------------------------
+
+let lightboxItems = [];
+let lightboxIndex = 0;
+
+function openLightbox(items, index) {
+  if (!Array.isArray(items) || items.length === 0) return;
+  lightboxItems = items;
+  lightboxIndex = Math.max(0, Math.min(index, items.length - 1));
+  renderLightbox();
+  document.getElementById("lightbox").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeLightbox() {
+  const lb = document.getElementById("lightbox");
+  lb.classList.remove("open");
+  document.getElementById("lightbox-stage").innerHTML = "";
+  document.body.style.overflow = "";
+  lightboxItems = [];
+}
+
+function navLightbox(delta) {
+  if (lightboxItems.length === 0) return;
+  lightboxIndex = (lightboxIndex + delta + lightboxItems.length) % lightboxItems.length;
+  renderLightbox();
+}
+
+function renderLightbox() {
+  const m = lightboxItems[lightboxIndex];
+  if (!m) return;
+  const stage = document.getElementById("lightbox-stage");
+  const counter = document.getElementById("lightbox-counter");
+  const isVideo = m.type === "video" || m.type === "animated_gif";
+
+  if (isVideo) {
+    const variant = bestVideoVariant(m.video_variants);
+    if (variant && variant.url) {
+      stage.innerHTML = `
+        <video src="${escapeAttr(variant.url)}" poster="${escapeAttr(m.media_url || "")}"
+               controls autoplay ${m.type === "animated_gif" ? "loop muted" : ""} playsinline></video>`;
+    } else {
+      // No playable variant captured — fall back to the poster.
+      stage.innerHTML = `<img src="${escapeAttr(fullResImageUrl(m.media_url || ""))}" alt="">`;
+    }
+  } else {
+    stage.innerHTML = `<img src="${escapeAttr(fullResImageUrl(m.media_url || ""))}" alt="">`;
+  }
+
+  const showNav = lightboxItems.length > 1;
+  document.querySelector(".lightbox-prev").hidden = !showNav;
+  document.querySelector(".lightbox-next").hidden = !showNav;
+  counter.textContent = showNav ? `${lightboxIndex + 1} / ${lightboxItems.length}` : "";
+}
+
+function setupLightbox() {
+  const lb = document.getElementById("lightbox");
+
+  lb.addEventListener("click", (ev) => {
+    // Stop propagation from inner image/video so click on them doesn't close
+    if (ev.target.closest("[data-stop-bubble]") && !ev.target.closest("[data-action]")) {
+      return;
+    }
+    const action = ev.target.closest("[data-action]");
+    if (!action) return;
+    if (action.dataset.action === "lb-close") closeLightbox();
+    else if (action.dataset.action === "lb-prev") { ev.stopPropagation(); navLightbox(-1); }
+    else if (action.dataset.action === "lb-next") { ev.stopPropagation(); navLightbox(1); }
+  });
+
+  document.addEventListener("keydown", (ev) => {
+    if (!lb.classList.contains("open")) return;
+    if (ev.key === "Escape") closeLightbox();
+    else if (ev.key === "ArrowLeft") navLightbox(-1);
+    else if (ev.key === "ArrowRight") navLightbox(1);
+  });
+
+  // Touch swipe inside the stage to navigate
+  let startX = null;
+  lb.addEventListener("touchstart", (ev) => {
+    if (ev.touches.length !== 1) return;
+    startX = ev.touches[0].clientX;
+  }, { passive: true });
+  lb.addEventListener("touchend", (ev) => {
+    if (startX == null) return;
+    const dx = (ev.changedTouches[0]?.clientX || startX) - startX;
+    if (Math.abs(dx) > 60) navLightbox(dx < 0 ? 1 : -1);
+    startX = null;
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
 
@@ -113,6 +206,9 @@ async function init() {
 
   // Periodic freshness label update
   setInterval(updateFreshness, 15000);
+
+  // Lightbox / media viewer
+  setupLightbox();
 
   await refreshSnapshotList();
   handleRoute();
@@ -537,16 +633,51 @@ function renderMedia(media) {
   if (!Array.isArray(media) || media.length === 0) return "";
   const items = media.slice(0, 4);
   const count = items.length;
-  return `<div class="media-grid count-${count}">${items.map((m) => {
+  // Serialize the items list once per tweet so the lightbox can pull it
+  // straight from the DOM without a side-channel registry.
+  const payload = encodeURIComponent(JSON.stringify(items));
+  return `<div class="media-grid count-${count}" data-media="${payload}">${items.map((m, i) => {
     const src = m.media_url || "";
     const isVideo = m.type === "video" || m.type === "animated_gif";
     return `
-      <div class="media-item">
+      <div class="media-item ${isVideo ? "is-video" : ""}" data-action="open-media" data-index="${i}">
         <img src="${escapeAttr(src)}" alt="" loading="lazy">
-        ${isVideo ? `<span class="video-badge">${ICONS.video} ${m.type === "animated_gif" ? "GIF" : "VIDEO"}</span>` : ""}
+        ${isVideo ? `
+          <span class="video-badge">${ICONS.video} ${m.type === "animated_gif" ? "GIF" : "VIDEO"}</span>
+          <span class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        ` : ""}
       </div>
     `;
   }).join("")}</div>`;
+}
+
+function bestVideoVariant(variants) {
+  if (!Array.isArray(variants) || variants.length === 0) return null;
+  // Prefer mp4, then highest bitrate.
+  const mp4s = variants.filter((v) => v.content_type === "video/mp4" && v.url);
+  if (mp4s.length) {
+    return mp4s.reduce((a, b) => ((b.bitrate || 0) > (a.bitrate || 0) ? b : a));
+  }
+  return variants.find((v) => v.url) || null;
+}
+
+function fullResImageUrl(url) {
+  // pbs.twimg.com images accept ?name=large / orig / 4096x4096 for higher
+  // resolution than the default. Default is usually 'small' / no suffix.
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("twimg.com") && u.pathname.startsWith("/media/")) {
+      u.searchParams.set("name", "large");
+      // If the path doesn't have an extension, default to jpg; X serves
+      // either, but explicit format keeps the URL clean.
+      if (!u.searchParams.has("format") && /\.(jpg|jpeg|png|webp)$/i.test(u.pathname)) {
+        // already has extension via path — leave as-is
+      }
+      return u.toString();
+    }
+  } catch (_) {}
+  return url;
 }
 
 function renderUrlCard(t) {
@@ -641,6 +772,18 @@ async function onContentClick(ev) {
       ev.preventDefault();
       markAllAsSeen();
       return;
+    case "open-media": {
+      const grid = action.closest(".media-grid");
+      const idx = parseInt(action.dataset.index || "0", 10);
+      if (!grid) return;
+      try {
+        const items = JSON.parse(decodeURIComponent(grid.dataset.media || "[]"));
+        openLightbox(items, idx);
+      } catch (e) {
+        console.error("media payload error", e);
+      }
+      return;
+    }
   }
 }
 
