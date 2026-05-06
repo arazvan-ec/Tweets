@@ -2,7 +2,7 @@
 # The cron service is a separate Railway service created from the same repo;
 # in its Settings set:
 #   - Custom Start Command: python scripts/fetch_tweets.py --source mine --max 50
-#   - Cron Schedule:        * * * * *
+#   - Cron Schedule:        */5 * * * *
 
 [build]
 builder = "DOCKERFILE"
