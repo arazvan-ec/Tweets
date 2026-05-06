@@ -1,0 +1,15 @@
+# Cron service config — captures the home timeline every 5 minutes and
+# pushes it to Supabase.
+#
+# In Railway, on the cron service: Settings → Config-as-code → Config file path
+# = railway.cron.toml. This way the web service (railway.toml) and the cron
+# service use different startCommands from the same repo and the same image.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "python scripts/fetch_tweets.py --source timeline --max 50"
+cronSchedule = "*/5 * * * *"
+restartPolicyType = "NEVER"
