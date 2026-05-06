@@ -223,6 +223,11 @@ def tweet_to_dict(tweet, depth: int = 0) -> dict:
             "quotes": getattr(tweet, "quote_count", 0) or 0,
             "bookmarks": getattr(tweet, "bookmark_count", 0) or 0,
         },
+        "viewer_state": {
+            "liked": bool(legacy.get("favorited", False)),
+            "retweeted": bool(legacy.get("retweeted", False)),
+            "bookmarked": bool(getattr(tweet, "bookmarked", False) or legacy.get("bookmarked", False)),
+        },
         "is_retweet": retweeted is not None,
         "is_reply": getattr(tweet, "in_reply_to", None) is not None,
         "is_quote": getattr(tweet, "is_quote_status", False) or quoted is not None,
@@ -242,8 +247,8 @@ def tweet_to_dict(tweet, depth: int = 0) -> dict:
 # Fetchers
 # ---------------------------------------------------------------------------
 
-async def fetch_timeline(client: twikit.Client, max_tweets: int = 100) -> list[dict]:
-    print(f"Fetching home timeline (target: {max_tweets})...")
+async def fetch_for_you(client: twikit.Client, max_tweets: int = 100) -> list[dict]:
+    print(f"Fetching home For You timeline (target: {max_tweets})...")
     tweets = []
     results = await client.get_timeline(count=20)
     while results and len(tweets) < max_tweets:
@@ -256,8 +261,31 @@ async def fetch_timeline(client: twikit.Client, max_tweets: int = 100) -> list[d
             results = await results.next()
         except Exception:
             break
-    print(f"  -> {len(tweets)} timeline tweets fetched.")
+    print(f"  -> {len(tweets)} for_you tweets fetched.")
     return tweets[:max_tweets]
+
+
+async def fetch_following(client: twikit.Client, max_tweets: int = 100) -> list[dict]:
+    print(f"Fetching home Following timeline (target: {max_tweets})...")
+    tweets = []
+    results = await client.get_latest_timeline(count=20)
+    while results and len(tweets) < max_tweets:
+        for t in results:
+            tweets.append(tweet_to_dict(t))
+        print(f"  {len(tweets)} collected...")
+        if len(tweets) >= max_tweets:
+            break
+        try:
+            results = await results.next()
+        except Exception:
+            break
+    print(f"  -> {len(tweets)} following tweets fetched.")
+    return tweets[:max_tweets]
+
+
+# Backwards-compatible alias used by older callers (--source timeline).
+async def fetch_timeline(client: twikit.Client, max_tweets: int = 100) -> list[dict]:
+    return await fetch_for_you(client, max_tweets)
 
 
 async def fetch_own_tweets(client: twikit.Client, username: str, max_tweets: int = 100) -> list[dict]:
@@ -464,13 +492,30 @@ async def run(source: str, max_tweets: int):
 
     client = await get_client()
 
-    if source in ("timeline", "both"):
-        tweets = await fetch_timeline(client, max_tweets)
-        push_snapshot(sb, tweets, "timeline", username)
+    sources = {
+        "for_you": [("for_you",)],
+        "following": [("following",)],
+        "timeline": [("for_you",)],          # legacy alias
+        "mine": [("mine",)],
+        "both": [("for_you",), ("mine",)],   # legacy
+        "all_feeds": [("for_you",), ("following",)],
+        "all": [("for_you",), ("following",), ("mine",)],
+    }
+    plan = sources.get(source)
+    if plan is None:
+        print(f"ERROR: unknown source '{source}'")
+        sys.exit(1)
 
-    if source in ("mine", "both"):
-        tweets = await fetch_own_tweets(client, username, max_tweets)
-        push_snapshot(sb, tweets, "mine", username)
+    for (kind,) in plan:
+        if kind == "for_you":
+            tweets = await fetch_for_you(client, max_tweets)
+        elif kind == "following":
+            tweets = await fetch_following(client, max_tweets)
+        elif kind == "mine":
+            tweets = await fetch_own_tweets(client, username, max_tweets)
+        else:
+            continue
+        push_snapshot(sb, tweets, kind, username)
 
     print("\nDone.")
 
@@ -479,9 +524,9 @@ def main():
     parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
     parser.add_argument(
         "--source",
-        choices=["timeline", "mine", "both"],
-        default="both",
-        help="Which tweets to fetch (default: both)",
+        choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
+        default="all_feeds",
+        help="Which feed(s) to fetch (default: all_feeds = for_you + following)",
     )
     parser.add_argument(
         "--max",

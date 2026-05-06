@@ -1,6 +1,8 @@
 """
 Flask web app for Tweets — serves the static frontend in web/ and exposes a
-small JSON API. Reads from Supabase, refreshes via twikit on demand.
+JSON API. Reads from Supabase, refreshes via twikit on demand, and proxies
+write actions (like / retweet / bookmark / reply) back to X using the same
+session cookies that the cron service uses to fetch.
 """
 
 import asyncio
@@ -38,11 +40,46 @@ def sb() -> Client:
 
 
 # ---------------------------------------------------------------------------
+# twikit client (lazy, async). The same cookies the cron uses.
+# ---------------------------------------------------------------------------
+
+_tw = None
+
+
+async def tw_client():
+    global _tw
+    if _tw is None:
+        from scripts.fetch_tweets import get_client as get_tw_client
+        _tw = await get_tw_client()
+    return _tw
+
+
+def run_async(coro):
+    """Sync wrapper for our async helpers — Flask handlers are sync."""
+    try:
+        return asyncio.run(coro)
+    except RuntimeError:
+        # Already inside a loop (rare under gunicorn sync workers, but guard)
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+
+
+# ---------------------------------------------------------------------------
 # Static routes
 # ---------------------------------------------------------------------------
 
 @app.route("/")
 def index():
+    return send_from_directory(str(WEB_DIR), "index.html")
+
+
+# Serve /u/<handle> by returning the same SPA — the frontend's hash router
+# handles the actual profile rendering.
+@app.route("/u/<handle>")
+def index_profile(handle):
     return send_from_directory(str(WEB_DIR), "index.html")
 
 
@@ -52,7 +89,7 @@ def healthz():
 
 
 # ---------------------------------------------------------------------------
-# API
+# Read API
 # ---------------------------------------------------------------------------
 
 @app.route("/api/snapshots")
@@ -84,6 +121,14 @@ def api_tweets():
     selection = request.args.get("selection", "all_latest")
     source = request.args.get("source", "all")
     snapshot_id_param = request.args.get("id")
+    try:
+        limit = int(request.args.get("limit", "50"))
+    except ValueError:
+        limit = 50
+    try:
+        offset = int(request.args.get("offset", "0"))
+    except ValueError:
+        offset = 0
 
     client = sb()
 
@@ -114,7 +159,7 @@ def api_tweets():
         abort(400, "selection must be all_latest, all, or snapshot")
 
     if not target_ids:
-        return jsonify([])
+        return jsonify({"tweets": [], "total": 0, "has_more": False})
 
     bridge = (
         client.table("snapshot_tweets")
@@ -124,7 +169,7 @@ def api_tweets():
     )
     tweet_ids = list({b["tweet_id"] for b in (bridge.data or [])})
     if not tweet_ids:
-        return jsonify([])
+        return jsonify({"tweets": [], "total": 0, "has_more": False})
 
     rows: list[dict] = []
     CHUNK = 800
@@ -150,14 +195,19 @@ def api_tweets():
         unique.append(t)
     unique.sort(key=lambda t: t.get("created_at") or "", reverse=True)
 
-    return jsonify(unique)
+    total = len(unique)
+    page = unique[offset:offset + limit]
+    return jsonify({
+        "tweets": page,
+        "total": total,
+        "has_more": offset + limit < total,
+        "offset": offset,
+        "limit": limit,
+    })
 
 
 @app.route("/api/tweets/<tweet_id>/replies")
 def api_tweet_replies(tweet_id: str):
-    """Returns replies to a tweet. Reads from Supabase first; on first call
-    (no replies cached) or when ?refresh=1 is passed, fetches live via twikit
-    and caches the result."""
     refresh = request.args.get("refresh") == "1"
     client = sb()
 
@@ -174,28 +224,22 @@ def api_tweet_replies(tweet_id: str):
             replies.sort(key=lambda t: t.get("created_at") or "")
             return jsonify({"replies": replies, "from_cache": True})
 
-    # Live fetch via twikit (sync wrapper around async).
     try:
-        from scripts.fetch_tweets import (
-            get_client as get_tw_client,
-            fetch_replies,
-            push_tweets_only,
-        )
+        from scripts.fetch_tweets import fetch_replies, push_tweets_only
     except Exception as e:
         abort(500, f"fetch_tweets module unavailable: {e}")
 
     async def _do():
-        tw = await get_tw_client()
+        tw = await tw_client()
         replies = await fetch_replies(tw, tweet_id, max_replies=80)
         push_tweets_only(client, replies)
         return replies
 
     try:
-        replies = asyncio.run(_do())
+        replies = run_async(_do())
     except Exception as e:
         abort(500, f"replies fetch failed: {e}")
 
-    # Re-hydrate from DB so we get the canonical first_seen_at values.
     res = (
         client.table("tweets")
         .select("raw, first_seen_at, created_at")
@@ -207,12 +251,94 @@ def api_tweet_replies(tweet_id: str):
     return jsonify({"replies": hydrated, "from_cache": False})
 
 
+# ---------------------------------------------------------------------------
+# Profile API
+# ---------------------------------------------------------------------------
+
+def _user_to_dict(u) -> dict:
+    return {
+        "id": str(getattr(u, "id", "") or ""),
+        "name": getattr(u, "name", None),
+        "username": getattr(u, "screen_name", None),
+        "avatar": getattr(u, "profile_image_url", None),
+        "banner": getattr(u, "profile_banner_url", None),
+        "url": getattr(u, "url", None),
+        "location": getattr(u, "location", None),
+        "description": getattr(u, "description", None),
+        "verified": bool(getattr(u, "verified", False)),
+        "is_blue_verified": bool(getattr(u, "is_blue_verified", False)),
+        "followers_count": getattr(u, "followers_count", 0) or 0,
+        "following_count": getattr(u, "following_count", 0) or 0,
+        "statuses_count": getattr(u, "statuses_count", 0) or 0,
+        "created_at": getattr(u, "created_at", None),
+    }
+
+
+@app.route("/api/users/<handle>")
+def api_user(handle: str):
+    """Looks up a Twitter user by screen_name. Live fetch via twikit."""
+    async def _do():
+        tw = await tw_client()
+        return await tw.get_user_by_screen_name(handle)
+    try:
+        u = run_async(_do())
+    except Exception as e:
+        abort(404, f"user lookup failed: {e}")
+    return jsonify(_user_to_dict(u))
+
+
+@app.route("/api/users/<handle>/tweets")
+def api_user_tweets(handle: str):
+    """Fetches a user's recent tweets (live) and caches them."""
+    try:
+        max_n = int(request.args.get("max", "40"))
+    except ValueError:
+        max_n = 40
+    tweet_type = request.args.get("type", "Tweets")
+    if tweet_type not in ("Tweets", "Replies", "Media", "Likes"):
+        abort(400, "type must be Tweets, Replies, Media or Likes")
+
+    try:
+        from scripts.fetch_tweets import tweet_to_dict, push_tweets_only
+    except Exception as e:
+        abort(500, f"fetch_tweets module unavailable: {e}")
+
+    async def _do():
+        tw = await tw_client()
+        u = await tw.get_user_by_screen_name(handle)
+        results = await u.get_tweets(tweet_type, count=20)
+        out = []
+        while results and len(out) < max_n:
+            for t in results:
+                out.append(tweet_to_dict(t))
+            if len(out) >= max_n:
+                break
+            try:
+                results = await results.next()
+            except Exception:
+                break
+        return out[:max_n]
+
+    try:
+        tweets = run_async(_do())
+    except Exception as e:
+        abort(500, f"user tweets fetch failed: {e}")
+
+    push_tweets_only(sb(), tweets)
+    return jsonify({"user": handle, "type": tweet_type, "tweets": tweets})
+
+
+# ---------------------------------------------------------------------------
+# Refresh
+# ---------------------------------------------------------------------------
+
 @app.route("/api/refresh", methods=["POST"])
 def api_refresh():
-    """Triggers an in-process fetch of the user's own tweets and pushes to Supabase."""
-    source = request.args.get("source", "mine")
-    if source not in ("mine", "timeline", "both"):
-        abort(400, "source must be mine, timeline, or both")
+    """Triggers an in-process fetch of one or more feeds and pushes to Supabase."""
+    source = request.args.get("source", "all_feeds")
+    valid = {"for_you", "following", "mine", "timeline", "both", "all_feeds", "all"}
+    if source not in valid:
+        abort(400, f"source must be one of {sorted(valid)}")
     try:
         max_n = int(request.args.get("max", "50"))
     except ValueError:
@@ -224,7 +350,7 @@ def api_refresh():
         abort(500, f"fetch_tweets module unavailable: {e}")
 
     try:
-        asyncio.run(fetch_run(source, max_n))
+        run_async(fetch_run(source, max_n))
     except Exception as e:
         abort(500, f"refresh failed: {e}")
 
@@ -233,10 +359,104 @@ def api_refresh():
         .table("snapshots")
         .select("id, fetched_at, source, count")
         .order("fetched_at", desc=True)
-        .limit(1)
+        .limit(3)
         .execute()
     )
-    return jsonify({"ok": True, "latest_snapshot": (snap.data or [None])[0]})
+    return jsonify({"ok": True, "latest_snapshots": snap.data or []})
+
+
+# ---------------------------------------------------------------------------
+# Write actions
+# ---------------------------------------------------------------------------
+
+def _wrap_write(fn):
+    """Run an async twikit action and return {ok: True} or 500."""
+    try:
+        run_async(fn())
+        return jsonify({"ok": True})
+    except Exception as e:
+        abort(500, f"action failed: {e}")
+
+
+@app.route("/api/tweets/<tweet_id>/like", methods=["POST"])
+def api_like(tweet_id: str):
+    async def _do():
+        tw = await tw_client()
+        await tw.favorite_tweet(tweet_id)
+    return _wrap_write(_do)
+
+
+@app.route("/api/tweets/<tweet_id>/like", methods=["DELETE"])
+def api_unlike(tweet_id: str):
+    async def _do():
+        tw = await tw_client()
+        await tw.unfavorite_tweet(tweet_id)
+    return _wrap_write(_do)
+
+
+@app.route("/api/tweets/<tweet_id>/retweet", methods=["POST"])
+def api_retweet(tweet_id: str):
+    async def _do():
+        tw = await tw_client()
+        await tw.retweet(tweet_id)
+    return _wrap_write(_do)
+
+
+@app.route("/api/tweets/<tweet_id>/retweet", methods=["DELETE"])
+def api_unretweet(tweet_id: str):
+    async def _do():
+        tw = await tw_client()
+        await tw.delete_retweet(tweet_id)
+    return _wrap_write(_do)
+
+
+@app.route("/api/tweets/<tweet_id>/bookmark", methods=["POST"])
+def api_bookmark(tweet_id: str):
+    async def _do():
+        tw = await tw_client()
+        await tw.bookmark_tweet(tweet_id)
+    return _wrap_write(_do)
+
+
+@app.route("/api/tweets/<tweet_id>/bookmark", methods=["DELETE"])
+def api_unbookmark(tweet_id: str):
+    async def _do():
+        tw = await tw_client()
+        await tw.delete_bookmark(tweet_id)
+    return _wrap_write(_do)
+
+
+@app.route("/api/tweets/<tweet_id>/reply", methods=["POST"])
+def api_reply(tweet_id: str):
+    body = request.get_json(silent=True) or {}
+    text = (body.get("text") or "").strip()
+    if not text:
+        abort(400, "text required")
+    if len(text) > 280:
+        abort(400, "text exceeds 280 characters")
+
+    try:
+        from scripts.fetch_tweets import tweet_to_dict, push_tweets_only
+    except Exception as e:
+        abort(500, f"fetch_tweets module unavailable: {e}")
+
+    async def _do():
+        tw = await tw_client()
+        new_tweet = await tw.create_tweet(text=text, reply_to=tweet_id)
+        return new_tweet
+
+    try:
+        new_tweet = run_async(_do())
+    except Exception as e:
+        abort(500, f"reply failed: {e}")
+
+    serialized = tweet_to_dict(new_tweet)
+    try:
+        push_tweets_only(sb(), [serialized])
+    except Exception:
+        pass
+
+    return jsonify({"ok": True, "tweet": serialized})
 
 
 # ---------------------------------------------------------------------------
