@@ -150,16 +150,35 @@ async def get_client() -> twikit.Client:
 # ---------------------------------------------------------------------------
 
 def _media_to_dict(m) -> dict:
-    return {
+    raw = getattr(m, "_data", {}) or {}
+    out = {
         "id": getattr(m, "id", None),
         "type": getattr(m, "type", None),
         "media_url": getattr(m, "media_url", None),
         "expanded_url": getattr(m, "expanded_url", None),
         "display_url": getattr(m, "display_url", None),
         "url": getattr(m, "url", None),
-        "width": (getattr(m, "_data", {}) or {}).get("original_info", {}).get("width"),
-        "height": (getattr(m, "_data", {}) or {}).get("original_info", {}).get("height"),
+        "width": raw.get("original_info", {}).get("width"),
+        "height": raw.get("original_info", {}).get("height"),
     }
+    # Video / animated GIF: capture the playable variants so the frontend
+    # can drop a real <video> element instead of just the poster image.
+    video_info = raw.get("video_info")
+    if isinstance(video_info, dict):
+        variants = []
+        for v in (video_info.get("variants") or []):
+            variants.append({
+                "url": v.get("url"),
+                "bitrate": v.get("bitrate"),
+                "content_type": v.get("content_type"),
+            })
+        if variants:
+            out["video_variants"] = variants
+        if video_info.get("aspect_ratio"):
+            out["aspect_ratio"] = video_info["aspect_ratio"]
+        if video_info.get("duration_millis"):
+            out["duration_ms"] = video_info["duration_millis"]
+    return out
 
 
 def _user_to_dict(user) -> dict | None:
