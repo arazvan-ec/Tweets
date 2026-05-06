@@ -1,7 +1,7 @@
 # Web service config — serves the Flask UI/API.
 # The cron service is a separate Railway service created from the same repo;
 # in its Settings set:
-#   - Custom Start Command: python scripts/fetch_tweets.py --source mine --max 50
+#   - Custom Start Command: python scripts/fetch_tweets.py --source timeline --max 50
 #   - Cron Schedule:        */5 * * * *
 
 [build]
