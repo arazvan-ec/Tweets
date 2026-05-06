@@ -51,9 +51,65 @@ header h1 {
   letter-spacing: -0.3px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 #stats {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  border-radius: 9999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn-primary:hover { background: #1a8cd8; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary svg { transition: transform 0.5s; }
+.btn-primary.loading svg { animation: spin 1s linear infinite; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elev);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 13px;
+  z-index: 100;
+  animation: toast-in 0.2s ease-out;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.toast.success { border-color: var(--green); }
+.toast.error { border-color: var(--red); color: var(--red); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .controls {
@@ -121,10 +177,37 @@ main {
   border-bottom: 1px solid var(--border);
   cursor: default;
   transition: background 0.15s;
+  position: relative;
 }
 
 .tweet:hover {
   background: var(--bg-card-hover);
+}
+
+/* Highlight: tweets that arrived in the most recent fetch and the user
+   hasn't acknowledged yet. */
+.tweet.is-new {
+  background: rgba(29, 155, 240, 0.07);
+  border-left: 3px solid var(--accent);
+  padding-left: 13px;
+}
+
+.tweet.is-new:hover {
+  background: rgba(29, 155, 240, 0.12);
+}
+
+.new-pill {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  vertical-align: middle;
 }
 
 .tweet-avatar {
@@ -417,6 +500,95 @@ main {
 .tweet-action:hover.action-like { color: var(--pink); }
 .tweet-action:hover.action-bookmark { color: var(--accent); }
 .tweet-action:hover.action-views { color: var(--accent); }
+
+.tweet-action.clickable { cursor: pointer; }
+
+/* Replies / comments thread */
+.replies-thread {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.replies-thread .replies-loading {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 12px;
+}
+
+.reply-card {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-light);
+}
+
+.reply-card:first-child { border-top: 0; }
+
+.reply-avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg-elev);
+}
+
+.reply-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.reply-body { flex: 1; min-width: 0; }
+
+.reply-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.reply-name { font-weight: 700; color: var(--text); }
+.reply-handle, .reply-date { color: var(--text-muted); font-size: 13px; }
+
+.reply-text {
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 4px;
+}
+
+.reply-metrics {
+  display: flex;
+  gap: 14px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.replies-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 14px 8px;
+}
+
+.replies-actions {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.btn-link {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-link:hover { background: rgba(29, 155, 240, 0.1); }
 
 /* Misc */
 .lang-badge {

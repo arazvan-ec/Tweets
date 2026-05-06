@@ -1,0 +1,16 @@
+# Web service config — serves the Flask UI/API.
+# The cron service is a separate Railway service created from the same repo;
+# in its Settings set:
+#   - Custom Start Command: python scripts/fetch_tweets.py --source mine --max 50
+#   - Cron Schedule:        * * * * *
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --timeout 60 server.main:app"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

@@ -10,7 +10,13 @@
 
 <header>
   <h1>Tweets Browser</h1>
-  <div id="stats"></div>
+  <div class="header-right">
+    <span id="stats"></span>
+    <button type="button" id="refresh-btn" class="btn-primary" title="Captura nuevos tweets ahora">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M17.5 4.5h2v6h-6v-2h2.69c-.92-1.83-2.81-3-4.69-3C8.69 5.5 6 7.92 6 12s2.69 6.5 6.5 6.5c2.59 0 4.96-1.55 5.99-3.94l1.84.79C19.04 18.4 15.93 20.5 12.5 20.5 7.59 20.5 4 16.93 4 12s3.59-8.5 8.5-8.5c2.5 0 4.81 1.31 6.13 3.45L17.5 4.5z"/></svg>
+      <span id="refresh-label">Actualizar</span>
+    </button>
+  </div>
 </header>
 
 <div class="controls">

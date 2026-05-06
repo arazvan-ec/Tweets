@@ -1,9 +1,9 @@
 """
 Flask web app for Tweets — serves the static frontend in web/ and exposes a
-small JSON API that proxies queries to Supabase. The Supabase URL and key
-stay server-side so the browser never sees them directly.
+small JSON API. Reads from Supabase, refreshes via twikit on demand.
 """
 
+import asyncio
 import os
 from pathlib import Path
 
@@ -67,24 +67,26 @@ def api_snapshots():
     return jsonify(res.data or [])
 
 
+def _hydrate(rows: list[dict]) -> list[dict]:
+    """Merge DB metadata (first_seen_at) into the raw tweet dicts."""
+    out: list[dict] = []
+    for r in rows:
+        raw = r.get("raw")
+        if not raw:
+            continue
+        raw["_first_seen_at"] = r.get("first_seen_at")
+        out.append(raw)
+    return out
+
+
 @app.route("/api/tweets")
 def api_tweets():
-    """
-    Returns tweets in the same shape as the JSON snapshots so the existing
-    frontend logic keeps working.
-
-    Query params:
-      selection: 'all_latest' (default) | 'all' | 'snapshot'
-      id: snapshot id (when selection='snapshot')
-      source: 'all' (default) | 'timeline' | 'mine'
-    """
     selection = request.args.get("selection", "all_latest")
     source = request.args.get("source", "all")
     snapshot_id_param = request.args.get("id")
 
     client = sb()
 
-    # Resolve the set of snapshot ids we care about.
     snaps_q = (
         client.table("snapshots")
         .select("id, source, fetched_at")
@@ -114,7 +116,6 @@ def api_tweets():
     if not target_ids:
         return jsonify([])
 
-    # Tweet ids that appear in those snapshots.
     bridge = (
         client.table("snapshot_tweets")
         .select("tweet_id")
@@ -125,22 +126,20 @@ def api_tweets():
     if not tweet_ids:
         return jsonify([])
 
-    # Pull the raw column — already shaped exactly like a snapshot tweet.
-    tweets: list[dict] = []
+    rows: list[dict] = []
     CHUNK = 800
     for i in range(0, len(tweet_ids), CHUNK):
         chunk = tweet_ids[i:i + CHUNK]
         res = (
             client.table("tweets")
-            .select("raw, created_at")
+            .select("raw, first_seen_at, created_at")
             .in_("id", chunk)
             .execute()
         )
-        for row in (res.data or []):
-            if row.get("raw"):
-                tweets.append(row["raw"])
+        rows.extend(res.data or [])
 
-    # Dedup + newest first.
+    tweets = _hydrate(rows)
+
     seen = set()
     unique = []
     for t in tweets:
@@ -152,6 +151,92 @@ def api_tweets():
     unique.sort(key=lambda t: t.get("created_at") or "", reverse=True)
 
     return jsonify(unique)
+
+
+@app.route("/api/tweets/<tweet_id>/replies")
+def api_tweet_replies(tweet_id: str):
+    """Returns replies to a tweet. Reads from Supabase first; on first call
+    (no replies cached) or when ?refresh=1 is passed, fetches live via twikit
+    and caches the result."""
+    refresh = request.args.get("refresh") == "1"
+    client = sb()
+
+    if not refresh:
+        cached = (
+            client.table("tweets")
+            .select("raw, first_seen_at, created_at")
+            .eq("in_reply_to_id", tweet_id)
+            .execute()
+        )
+        rows = cached.data or []
+        if rows:
+            replies = _hydrate(rows)
+            replies.sort(key=lambda t: t.get("created_at") or "")
+            return jsonify({"replies": replies, "from_cache": True})
+
+    # Live fetch via twikit (sync wrapper around async).
+    try:
+        from scripts.fetch_tweets import (
+            get_client as get_tw_client,
+            fetch_replies,
+            push_tweets_only,
+        )
+    except Exception as e:
+        abort(500, f"fetch_tweets module unavailable: {e}")
+
+    async def _do():
+        tw = await get_tw_client()
+        replies = await fetch_replies(tw, tweet_id, max_replies=80)
+        push_tweets_only(client, replies)
+        return replies
+
+    try:
+        replies = asyncio.run(_do())
+    except Exception as e:
+        abort(500, f"replies fetch failed: {e}")
+
+    # Re-hydrate from DB so we get the canonical first_seen_at values.
+    res = (
+        client.table("tweets")
+        .select("raw, first_seen_at, created_at")
+        .in_("id", [r["id"] for r in replies] or ["__none__"])
+        .execute()
+    )
+    hydrated = _hydrate(res.data or [])
+    hydrated.sort(key=lambda t: t.get("created_at") or "")
+    return jsonify({"replies": hydrated, "from_cache": False})
+
+
+@app.route("/api/refresh", methods=["POST"])
+def api_refresh():
+    """Triggers an in-process fetch of the user's own tweets and pushes to Supabase."""
+    source = request.args.get("source", "mine")
+    if source not in ("mine", "timeline", "both"):
+        abort(400, "source must be mine, timeline, or both")
+    try:
+        max_n = int(request.args.get("max", "50"))
+    except ValueError:
+        abort(400, "max must be an integer")
+
+    try:
+        from scripts.fetch_tweets import run as fetch_run
+    except Exception as e:
+        abort(500, f"fetch_tweets module unavailable: {e}")
+
+    try:
+        asyncio.run(fetch_run(source, max_n))
+    except Exception as e:
+        abort(500, f"refresh failed: {e}")
+
+    snap = (
+        sb()
+        .table("snapshots")
+        .select("id, fetched_at, source, count")
+        .order("fetched_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    return jsonify({"ok": True, "latest_snapshot": (snap.data or [None])[0]})
 
 
 # ---------------------------------------------------------------------------

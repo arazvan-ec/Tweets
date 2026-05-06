@@ -10,6 +10,12 @@ const typeFilter = $("#type-filter");
 const sortBy = $("#sort-by");
 const searchInput = $("#search");
 const statsEl = $("#stats");
+const refreshBtn = $("#refresh-btn");
+const refreshLabel = $("#refresh-label");
+
+const LAST_SEEN_KEY = "tweets:last_seen_at";
+const REPLIES_OPEN = new Set();   // tweet ids whose replies are currently expanded
+const REPLIES_CACHE = new Map();  // tweet_id -> [reply, ...]
 
 let allSnapshots = [];
 let currentTweets = [];
@@ -58,8 +64,175 @@ async function init() {
   typeFilter.addEventListener("change", render);
   sortBy.addEventListener("change", render);
   searchInput.addEventListener("input", render);
+  refreshBtn.addEventListener("click", onRefreshClick);
+  tweetsEl.addEventListener("click", onTweetsClick);
+  statsEl.addEventListener("click", (ev) => {
+    if (ev.target.closest('[data-action="mark-seen"]')) {
+      ev.preventDefault();
+      markAllAsSeen();
+    }
+  });
 
   await loadCurrentSelection();
+}
+
+// ---------------------------------------------------------------------------
+// Refresh
+// ---------------------------------------------------------------------------
+
+async function onRefreshClick() {
+  if (refreshBtn.disabled) return;
+  refreshBtn.disabled = true;
+  refreshBtn.classList.add("loading");
+  refreshLabel.textContent = "Capturando…";
+  try {
+    const resp = await fetch("/api/refresh?source=mine&max=50", { method: "POST" });
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(text || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    showToast(`✓ Snapshot ${data.latest_snapshot?.id} guardado`, "success");
+    // Reload the snapshot list and the current view.
+    const sResp = await fetch("/api/snapshots", { cache: "no-store" });
+    if (sResp.ok) {
+      allSnapshots = await sResp.json();
+      allSnapshots.sort((a, b) => b.fetched_at.localeCompare(a.fetched_at));
+      populateSnapshots();
+    }
+    await loadCurrentSelection();
+  } catch (e) {
+    console.error(e);
+    showToast(`Error: ${e.message}`, "error");
+  } finally {
+    refreshBtn.disabled = false;
+    refreshBtn.classList.remove("loading");
+    refreshLabel.textContent = "Actualizar";
+  }
+}
+
+function showToast(msg, kind = "") {
+  const el = document.createElement("div");
+  el.className = `toast ${kind}`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ---------------------------------------------------------------------------
+// Tweet click handler — delegates expand/collapse for replies
+// ---------------------------------------------------------------------------
+
+async function onTweetsClick(ev) {
+  const action = ev.target.closest("[data-action]");
+  if (!action) return;
+  const tweetEl = action.closest("[data-tweet-id]");
+  if (!tweetEl) return;
+  const tweetId = tweetEl.getAttribute("data-tweet-id");
+
+  if (action.dataset.action === "toggle-replies") {
+    if (REPLIES_OPEN.has(tweetId)) {
+      REPLIES_OPEN.delete(tweetId);
+      const el = tweetEl.querySelector(".replies-thread");
+      if (el) el.remove();
+    } else {
+      REPLIES_OPEN.add(tweetId);
+      await renderReplies(tweetEl, tweetId, false);
+    }
+  } else if (action.dataset.action === "refresh-replies") {
+    await renderReplies(tweetEl, tweetId, true);
+  } else if (action.dataset.action === "mark-seen") {
+    markAllAsSeen();
+  }
+}
+
+async function renderReplies(tweetEl, tweetId, refresh) {
+  let container = tweetEl.querySelector(".replies-thread");
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "replies-thread";
+    tweetEl.querySelector(".tweet-body").appendChild(container);
+  }
+  container.innerHTML = `<div class="replies-loading">Cargando comentarios…</div>`;
+
+  let data;
+  try {
+    if (refresh) REPLIES_CACHE.delete(tweetId);
+    if (REPLIES_CACHE.has(tweetId) && !refresh) {
+      data = { replies: REPLIES_CACHE.get(tweetId), from_cache: true };
+    } else {
+      const resp = await fetch(`/api/tweets/${tweetId}/replies${refresh ? "?refresh=1" : ""}`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      data = await resp.json();
+      REPLIES_CACHE.set(tweetId, data.replies || []);
+    }
+  } catch (e) {
+    container.innerHTML = `<div class="replies-empty">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+
+  const replies = data.replies || [];
+  if (replies.length === 0) {
+    container.innerHTML = `
+      <div class="replies-empty">Sin comentarios</div>
+      <div class="replies-actions">
+        <button class="btn-link" data-action="refresh-replies">Buscar comentarios en X</button>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML =
+    replies.map(renderReply).join("") +
+    `<div class="replies-actions">
+       <button class="btn-link" data-action="refresh-replies">${data.from_cache ? "Recargar desde X" : "Refrescado"}</button>
+     </div>`;
+}
+
+function renderReply(t) {
+  const author = t.author || {};
+  const m = t.metrics || {};
+  const avatar = author.avatar
+    ? `<img src="${escapeAttr(upgradeAvatar(author.avatar))}" loading="lazy">`
+    : "";
+  return `
+    <div class="reply-card">
+      <div class="reply-avatar">${avatar}</div>
+      <div class="reply-body">
+        <div class="reply-header">
+          <span class="reply-name">${escapeHtml(author.name || "?")}${badgeFor(author)}</span>
+          <span class="reply-handle">@${escapeHtml(author.username || "?")}</span>
+          <span class="reply-date">· ${escapeHtml(formatRelative(t.created_at))}</span>
+        </div>
+        <div class="reply-text">${renderText(t)}</div>
+        ${renderMedia(t.media)}
+        <div class="reply-metrics">
+          <span>💬 ${formatNum(m.replies)}</span>
+          <span>🔁 ${formatNum(m.retweets)}</span>
+          <span>❤ ${formatNum(m.likes)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// "New tweet" tracking
+// ---------------------------------------------------------------------------
+
+function getLastSeenAt() {
+  return localStorage.getItem(LAST_SEEN_KEY) || "1970-01-01T00:00:00Z";
+}
+
+function markAllAsSeen() {
+  // Use the freshest first_seen_at from the currently rendered tweets.
+  let latest = "";
+  for (const t of currentTweets) {
+    const s = t._first_seen_at;
+    if (s && s > latest) latest = s;
+  }
+  if (latest) localStorage.setItem(LAST_SEEN_KEY, latest);
+  render();
 }
 
 function populateSnapshots() {
@@ -177,7 +350,10 @@ function applySort(tweets) {
 function render() {
   const filtered = applySort(applyFilters(currentTweets));
 
-  statsEl.textContent = `${filtered.length} de ${currentTweets.length} tweets`;
+  const lastSeen = getLastSeenAt();
+  const newCount = filtered.filter(t => t._first_seen_at && t._first_seen_at > lastSeen).length;
+  const newLabel = newCount > 0 ? ` · <a href="#" data-action="mark-seen" style="color:var(--accent)">${newCount} nuevos</a>` : "";
+  statsEl.innerHTML = `${filtered.length} de ${currentTweets.length} tweets${newLabel}`;
 
   if (filtered.length === 0) {
     tweetsEl.innerHTML = '<div class="empty">No hay tweets con estos filtros.</div>';
@@ -200,6 +376,10 @@ function renderTweet(t) {
   const author = display.author || {};
   const m = display.metrics || {};
 
+  // "New" if first_seen_at is more recent than the user's last-seen marker.
+  const lastSeen = getLastSeenAt();
+  const isNew = !!(t._first_seen_at && t._first_seen_at > lastSeen);
+
   let header = "";
   if (retweeter) {
     header = `<div class="tweet-context">${ICONS.retweet_small} ${escapeHtml(retweeter.name || retweeter.username || "")} retwitteó</div>`;
@@ -217,13 +397,14 @@ function renderTweet(t) {
   const quote = display.quoted_tweet ? renderQuote(display.quoted_tweet) : "";
   const card = renderUrlCard(display);
   const langBadge = display.lang ? `<span class="lang-badge">${escapeHtml(display.lang)}</span>` : "";
+  const newPill = isNew ? `<span class="new-pill">nuevo</span>` : "";
 
   const avatar = author.avatar
     ? `<img src="${escapeAttr(upgradeAvatar(author.avatar))}" alt="" loading="lazy">`
     : `<div style="width:100%;height:100%;background:#2f3336;"></div>`;
 
   return `
-    <article class="tweet">
+    <article class="tweet ${isNew ? "is-new" : ""}" data-tweet-id="${escapeAttr(display.id)}">
       <div class="tweet-avatar">${avatar}</div>
       <div class="tweet-body">
         ${header}
@@ -233,6 +414,7 @@ function renderTweet(t) {
           <span class="tweet-sep">·</span>
           <a class="tweet-date" href="${escapeAttr(display.url || "#")}" target="_blank" rel="noopener" title="${escapeAttr(formatFullDate(display.created_at))}">${escapeHtml(formatRelative(display.created_at))}</a>
           ${langBadge}
+          ${newPill}
         </div>
         ${replyingTo}
         <div class="tweet-text">${text}</div>
@@ -240,7 +422,7 @@ function renderTweet(t) {
         ${quote}
         ${card}
         <div class="tweet-actions">
-          <span class="tweet-action action-reply">${ICONS.reply}<span>${formatNum(m.replies)}</span></span>
+          <span class="tweet-action action-reply clickable" data-action="toggle-replies" title="Ver comentarios">${ICONS.reply}<span>${formatNum(m.replies)}</span></span>
           <span class="tweet-action action-retweet">${ICONS.retweet}<span>${formatNum(m.retweets)}</span></span>
           <span class="tweet-action action-like">${ICONS.like}<span>${formatNum(m.likes)}</span></span>
           <span class="tweet-action action-bookmark">${ICONS.bookmark}<span>${formatNum(m.bookmarks)}</span></span>

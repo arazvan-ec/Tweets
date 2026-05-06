@@ -279,6 +279,23 @@ async def fetch_own_tweets(client: twikit.Client, username: str, max_tweets: int
     return tweets[:max_tweets]
 
 
+async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int = 80) -> list[dict]:
+    """Fetches direct replies to a single tweet via X's tweet detail endpoint."""
+    parent = await client.get_tweet_by_id(tweet_id)
+    replies: list[dict] = []
+    page = parent.replies
+    while page and len(replies) < max_replies:
+        for r in page:
+            replies.append(tweet_to_dict(r))
+        if len(replies) >= max_replies:
+            break
+        try:
+            page = await page.next()
+        except Exception:
+            break
+    return replies[:max_replies]
+
+
 # ---------------------------------------------------------------------------
 # Supabase
 # ---------------------------------------------------------------------------
@@ -358,6 +375,34 @@ def _tweet_row(t: dict, now_iso: str) -> dict:
 def _chunked(items, size):
     for i in range(0, len(items), size):
         yield items[i:i + size]
+
+
+def push_tweets_only(sb: Client, tweets: list[dict]):
+    """Upserts authors + tweets without creating a snapshot (used for replies)."""
+    if not tweets:
+        return
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    authors: dict[str, dict] = {}
+    for t in tweets:
+        for src in (t, t.get("quoted_tweet"), t.get("retweeted_tweet")):
+            if not src:
+                continue
+            a = src.get("author")
+            if a and a.get("id"):
+                authors[a["id"]] = _author_row(a, now_iso)
+    if authors:
+        for chunk in _chunked(list(authors.values()), 200):
+            sb.table("authors").upsert(chunk, on_conflict="id").execute()
+
+    rows: dict[str, dict] = {}
+    for t in tweets:
+        rows[t["id"]] = _tweet_row(t, now_iso)
+        for nested in (t.get("quoted_tweet"), t.get("retweeted_tweet")):
+            if nested and nested.get("id") and nested["id"] not in rows:
+                rows[nested["id"]] = _tweet_row(nested, now_iso)
+    for chunk in _chunked(list(rows.values()), 200):
+        sb.table("tweets").upsert(chunk, on_conflict="id").execute()
 
 
 def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
