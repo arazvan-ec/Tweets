@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tweets Browser</title>
+<style>
+:root {
+  --bg: #15202b;
+  --bg-elev: #1e2732;
+  --bg-hover: #243340;
+  --border: #38444d;
+  --text: #e7e9ea;
+  --text-muted: #71767b;
+  --accent: #1d9bf0;
+  --green: #00ba7c;
+  --red: #f4212e;
+  --yellow: #ffd400;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+#stats {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.controls select,
+.controls input {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.controls input[type="search"] {
+  flex: 1;
+  min-width: 200px;
+}
+
+.controls select:focus,
+.controls input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.tweet {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  transition: background 0.1s;
+}
+
+.tweet:hover {
+  background: var(--bg-hover);
+}
+
+.tweet-context {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.tweet-context.retweet { color: var(--green); }
+.tweet-context.reply { color: var(--accent); }
+.tweet-context.quote { color: var(--yellow); }
+
+.tweet-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.tweet-author {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tweet-handle {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.tweet-date {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-left: auto;
+}
+
+.tweet-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 10px;
+}
+
+.tweet-text a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.tweet-text a:hover {
+  text-decoration: underline;
+}
+
+.tweet-metrics {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.tweet-metrics .metric {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tweet-metrics .metric strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.tweet-link {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.tweet-link:hover {
+  color: var(--accent);
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 60px 20px;
+}
+
+.error {
+  text-align: center;
+  color: var(--red);
+  padding: 20px;
+  background: rgba(244, 33, 46, 0.1);
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  margin: 20px;
+}
+
+footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+
+footer code {
+  background: var(--bg-elev);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.lang-badge {
+  display: inline-block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Tweets Browser</h1>
+  <div id="stats"></div>
+</header>
+
+<div class="controls">
+  <label>
+    Snapshot:
+    <select id="snapshot-select"></select>
+  </label>
+  <label>
+    Fuente:
+    <select id="source-filter">
+      <option value="all">Todas</option>
+      <option value="timeline">Home timeline</option>
+      <option value="mine">Mis tweets</option>
+    </select>
+  </label>
+  <label>
+    Tipo:
+    <select id="type-filter">
+      <option value="all">Todos</option>
+      <option value="original">Solo originales</option>
+      <option value="retweet">Retweets</option>
+      <option value="reply">Respuestas</option>
+      <option value="quote">Citas</option>
+    </select>
+  </label>
+  <label>
+    Ordenar:
+    <select id="sort-by">
+      <option value="date_desc">Más recientes</option>
+      <option value="date_asc">Más antiguos</option>
+      <option value="likes">Más likes</option>
+      <option value="retweets">Más retweets</option>
+      <option value="replies">Más respuestas</option>
+      <option value="views">Más vistas</option>
+    </select>
+  </label>
+  <input type="search" id="search" placeholder="Buscar texto, autor...">
+</div>
+
+<main id="tweets"></main>
+
+<footer>
+  <small>Versión autocontenida — 2 snapshots embebidos.</small>
+</footer>
+
+<script>
+// Embedded data — generated by scripts/build_standalone.py
+const EMBEDDED_SNAPSHOTS = [{"meta": {"file": "data/2026-05-06/timeline_20260506_194221.json", "fetched_at": "2026-05-06T19:42:21.884174+00:00", "source": "timeline", "username": "_smaily_dolgy_", "count": 30}, "data": {"fetched_at": "2026-05-06T19:42:21.884174+00:00", "source": "timeline", "username": "_smaily_dolgy_", "count": 30, "tweets": [{"id": "2052109764557980018", "text": "&gt; AIs are now evaluating AI-generated papers, reducing the entire academic exercise to a conversation between two robots\n\nWait so now neither the students nor the teachers have to do any work and the students get their diploma with the fancy cursive font and the teachers get", "created_at": "Wed May 06 19:34:28 +0000 2026", "lang": "en", "author": {"id": "2012653551407808512", "name": "Mo", "username": "atmoio"}, "metrics": {"likes": 29, "retweets": 2, "replies": 1, "views": "1244", "quotes": 0, "bookmarks": 1}, "is_retweet": false, "is_reply": false, "is_quote": true, "url": "https://x.com/atmoio/status/2052109764557980018"}, {"id": "2052108638819365066", "text": "China aterriza en el sector energético español absorbiendo al despacho que conoce sus entrañas.\n\nLa Big One china se ha fusionado con el despacho de Vicente López-Ibor Mayor, uno de los abogados energéticos más influyentes de España\nhttps://t.co/jRj1EIStr9", "created_at": "Wed May 06 19:30:00 +0000 2026", "lang": "es", "author": {"id": "17229160", "name": "El Confidencial", "username": "elconfidencial"}, "metrics": {"likes": 2, "retweets": 0, "replies": 1, "views": "891", "quotes": 0, "bookmarks": 0}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/elconfidencial/status/2052108638819365066"}, {"id": "2052041606283301101", "text": "RT @SimonHoiberg: If you're a founder and a dad, you should move to Switzerland 🇨🇭\n\n- Low taxes\n- Top quality of living\n- Family friendly\n-…", "created_at": "Wed May 06 15:03:38 +0000 2026", "lang": "en", "author": {"id": "875776212341329920", "name": "Simon Høiberg", "username": "SimonHoiberg"}, "metrics": {"likes": 0, "retweets": 16, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": true, "url": "https://x.com/SimonHoiberg/status/2052041606283301101"}, {"id": "2052039286493499421", "text": "RT @naderman: Packagist needs to finance staff, not just hardware and bandwidth. Contact me if your company's interested in joining our spo…", "created_at": "Wed May 06 14:54:25 +0000 2026", "lang": "en", "author": {"id": "15341368", "name": "Jordi Boggiano", "username": "seldaek"}, "metrics": {"likes": 0, "retweets": 2, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/seldaek/status/2052039286493499421"}, {"id": "2052107127779623041", "text": "🦒 Giraffes are too tall to hide in storms", "created_at": "Wed May 06 19:24:00 +0000 2026", "lang": "en", "author": {"id": "1335132884278108161", "name": "World of Statistics", "username": "stats_feed"}, "metrics": {"likes": 58, "retweets": 7, "replies": 27, "views": "9760", "quotes": 0, "bookmarks": 0}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/stats_feed/status/2052107127779623041"}, {"id": "2052099622852538462", "text": "Qué bonito, conmovedor, casi se me salta una lagrimita https://t.co/SWYQpCDHjf", "created_at": "Wed May 06 18:54:10 +0000 2026", "lang": "es", "author": {"id": "529573438", "name": "Martinez", "username": "MrtnzAlvrz"}, "metrics": {"likes": 12, "retweets": 0, "replies": 1, "views": "2013", "quotes": 0, "bookmarks": 4}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/MrtnzAlvrz/status/2052099622852538462"}, {"id": "2052033833470464383", "text": "RT @ObamaFoundation: Slide into history! 🛝✨ Tickets for the Museum at the Obama Presidential Center are ON SALE NOW.\n\nWhether you’re coming…", "created_at": "Wed May 06 14:32:45 +0000 2026", "lang": "en", "author": {"id": "813286", "name": "Barack Obama", "username": "BarackObama"}, "metrics": {"likes": 0, "retweets": 324, "replies": 0, "views": "128", "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/BarackObama/status/2052033833470464383"}, {"id": "2052090334016860304", "text": "Increíble recuperación de Rosa que voló desde Costa Rica a Madrid para someterse a una cirugía compleja de resección de un tumor adenoide quístico de traquea y carina mediante Uniportal VATS. Lo realizamos sin intubación y la recuperación ha sido excelente https://t.co/2n79MCNLhu", "created_at": "Wed May 06 18:17:16 +0000 2026", "lang": "es", "author": {"id": "807502866", "name": "Diego Gonzalez Rivas", "username": "dgonzalezrivas"}, "metrics": {"likes": 59, "retweets": 9, "replies": 1, "views": "2973", "quotes": 0, "bookmarks": 2}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/dgonzalezrivas/status/2052090334016860304"}, {"id": "2052091649031856328", "text": "RT @UbermenschMind: This will always be my Odysseus https://t.co/QUErhwOgdH", "created_at": "Wed May 06 18:22:29 +0000 2026", "lang": "en", "author": {"id": "730367962650128384", "name": "joan tubau", "username": "joantubau"}, "metrics": {"likes": 0, "retweets": 14, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/joantubau/status/2052091649031856328"}, {"id": "2052090588045193268", "text": "RT @glcst: years ago I saw the movie \"Hunger Games\" and thought it was ridiculous and stupid. Especially the part about the talk shows in t…", "created_at": "Wed May 06 18:18:16 +0000 2026", "lang": "en", "author": {"id": "389681470", "name": "Kent C. Dodds 🏹", "username": "kentcdodds"}, "metrics": {"likes": 0, "retweets": 3, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": true, "url": "https://x.com/kentcdodds/status/2052090588045193268"}, {"id": "2052087558700511470", "text": "Ya ha tenido su minuto civilizatorio de gloria.", "created_at": "Wed May 06 18:06:14 +0000 2026", "lang": "es", "author": {"id": "107360809", "name": "Ricardo Sánchez Butragueño", "username": "rsbutragueno"}, "metrics": {"likes": 0, "retweets": 0, "replies": 0, "views": "25", "quotes": 0, "bookmarks": 0}, "is_retweet": false, "is_reply": false, "is_quote": true, "url": "https://x.com/rsbutragueno/status/2052087558700511470"}, {"id": "2052085939078349157", "text": "RT @boyney123: The TipTap editor is so much fun to play with! \n\nIt can provide so much flexibility. Here I'm creating custom slash commands…", "created_at": "Wed May 06 17:59:48 +0000 2026", "lang": "en", "author": {"id": "1787766115235426304", "name": "EventCatalog", "username": "event_catalog"}, "metrics": {"likes": 0, "retweets": 1, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/event_catalog/status/2052085939078349157"}, {"id": "2052103604543041779", "text": "https://t.co/PNNlAzZgMc", "created_at": "Wed May 06 19:10:00 +0000 2026", "lang": "zxx", "author": {"id": "3237673034", "name": "Code Geek", "username": "codek_tv"}, "metrics": {"likes": 0, "retweets": 1, "replies": 0, "views": "152", "quotes": 0, "bookmarks": 0}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/codek_tv/status/2052103604543041779"}, {"id": "2052080985877913742", "text": "RT @systemdesignone: 6 algorithms that'll help you load balance traffic:\n\n1 Round robin\n→ Load balancer forwards the request to the servers…", "created_at": "Wed May 06 17:40:07 +0000 2026", "lang": "en", "author": {"id": "1646445864796184578", "name": "Neo Kim", "username": "systemdesignone"}, "metrics": {"likes": 0, "retweets": 15, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/systemdesignone/status/2052080985877913742"}, {"id": "2052074163330769023", "text": "Kubernetes v1.36: Admission Policies That Can't Be Deleted - https://t.co/2uA6jIKH5n #Kubernetes", "created_at": "Wed May 06 17:13:00 +0000 2026", "lang": "en", "author": {"id": "2813398537", "name": "Kubernetes", "username": "kubernetesio"}, "metrics": {"likes": 10, "retweets": 1, "replies": 0, "views": "2008", "quotes": 0, "bookmarks": 4}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/kubernetesio/status/2052074163330769023"}, {"id": "2052096340809666681", "text": "RT @ArthurCahuantzi: No todos los activos son iguales. Algunos generan valor año tras año, mientras que otros permanecen inactivos, destruy…", "created_at": "Wed May 06 18:41:08 +0000 2026", "lang": "es", "author": {"id": "938952866", "name": "Arthur Cahuantzi", "username": "ArthurCahuantzi"}, "metrics": {"likes": 0, "retweets": 1, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": true, "url": "https://x.com/ArthurCahuantzi/status/2052096340809666681"}, {"id": "2052071662934257797", "text": "RT @helloiamleonie: This is the most common question I’ve been asked recently:\n\n“Should I replace my RAG system with an agentic RAG one?”…", "created_at": "Wed May 06 17:03:04 +0000 2026", "lang": "en", "author": {"id": "19341814", "name": "Bilgin Ibryam", "username": "bibryam"}, "metrics": {"likes": 0, "retweets": 18, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/bibryam/status/2052071662934257797"}, {"id": "2052070913714139387", "text": "Dancers take a break on a rooftop in Asakusa, Tokyo, 1949, photographed by Toshinori Tanuma. https://t.co/ONowG0Dqys", "created_at": "Wed May 06 17:00:06 +0000 2026", "lang": "en", "author": {"id": "728409566338146304", "name": "History Defined", "username": "historydefined"}, "metrics": {"likes": 34, "retweets": 5, "replies": 1, "views": "2490", "quotes": 0, "bookmarks": 6}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/historydefined/status/2052070913714139387"}, {"id": "2052084583282176139", "text": "I know I'm not in a @texasroadhouse ! (and I'm probs gonna like the food better)", "created_at": "Wed May 06 17:54:25 +0000 2026", "lang": "en", "author": {"id": "4795561", "name": "Cal Evans", "username": "CalEvans"}, "metrics": {"likes": 0, "retweets": 0, "replies": 0, "views": "35", "quotes": 0, "bookmarks": 0}, "is_retweet": false, "is_reply": false, "is_quote": true, "url": "https://x.com/CalEvans/status/2052084583282176139"}, {"id": "2052063672197927285", "text": "(comic) Bob, the MVP https://t.co/bJPzDfHRk1", "created_at": "Wed May 06 16:31:19 +0000 2026", "lang": "en", "author": {"id": "1279474944460468224", "name": "Work Chronicles", "username": "_workchronicles"}, "metrics": {"likes": 130, "retweets": 14, "replies": 1, "views": "3011", "quotes": 0, "bookmarks": 4}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/_workchronicles/status/2052063672197927285"}, {"id": "2052051754997674364", "text": "At the Lab, the real excitement begins when our experiments reach your hands and we get to see what you create.\n\nThat’s why we’re super excited to share that @GoogleFlowMusic is partnering with Believe, a local artist development company, to put Flow Music directly into the hands", "created_at": "Wed May 06 15:43:58 +0000 2026", "lang": "en", "author": {"id": "163975783", "name": "Google Labs", "username": "GoogleLabs"}, "metrics": {"likes": 127, "retweets": 10, "replies": 5, "views": "12322", "quotes": 0, "bookmarks": 33}, "is_retweet": false, "is_reply": false, "is_quote": true, "url": "https://x.com/GoogleLabs/status/2052051754997674364"}, {"id": "2051808871933792758", "text": "Seroter Daily Reading List – May 5, 2026 (#777): Today’s links look at what happens when 1500 agents hit production at Uber, what a map of system topologies looks like, and how AI is finding 20-year-old bugs in mature software.\n\nhttps://t.co/CwNeMzkDAt", "created_at": "Tue May 05 23:38:50 +0000 2026", "lang": "en", "author": {"id": "48529642", "name": "Richard Seroter", "username": "rseroter"}, "metrics": {"likes": 1, "retweets": 0, "replies": 0, "views": "515", "quotes": 0, "bookmarks": 1}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/rseroter/status/2051808871933792758"}, {"id": "2051858018112073759", "text": "How to Work and Compound with AI\n\nhttps://t.co/Vanz92y42r", "created_at": "Wed May 06 02:54:07 +0000 2026", "lang": "en", "author": {"id": "332011447", "name": "Samuel Wong", "username": "samuel_wong_"}, "metrics": {"likes": 25, "retweets": 4, "replies": 1, "views": "981", "quotes": 0, "bookmarks": 10}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/samuel_wong_/status/2051858018112073759"}, {"id": "2051984960819777641", "text": "https://t.co/Tb7H8FNjoC", "created_at": "Wed May 06 11:18:33 +0000 2026", "lang": "zxx", "author": {"id": "1994840137336066051", "name": "Nainsi Dwivedi", "username": "NainsiDwiv50980"}, "metrics": {"likes": 158, "retweets": 47, "replies": 26, "views": "4182", "quotes": 0, "bookmarks": 110}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/NainsiDwiv50980/status/2051984960819777641"}, {"id": "2052028135965868203", "text": "RT @JoliCode: Formation React : composants, hooks, state, routing, livrer sans dette inutile ! Programme et sessions : https://t.co/mE7DesJ…", "created_at": "Wed May 06 14:10:07 +0000 2026", "lang": "fr", "author": {"id": "354398818", "name": "JoliCode", "username": "JoliCode"}, "metrics": {"likes": 0, "retweets": 2, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/JoliCode/status/2052028135965868203"}, {"id": "2052025916260262326", "text": "🚀 NEW in Power Platform! Business Skills in Dataverse are now in PUBLIC PREVIEW!\n• Teach AI agents YOUR org's processes in plain language\n• No code, no workflow builder\n• One update = changes everywhere! 🙌\n#Microsoft365 #PowerPlatform\nhttps://t.co/6BJul8O0tZ https://t.co/HsLzkY5OVw", "created_at": "Wed May 06 14:01:17 +0000 2026", "lang": "en", "author": {"id": "14955427", "name": "Laura Rogers, Microsoft MVP", "username": "WonderLaura"}, "metrics": {"likes": 23, "retweets": 2, "replies": 1, "views": "1365", "quotes": 0, "bookmarks": 12}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/WonderLaura/status/2052025916260262326"}, {"id": "2051967150894772609", "text": "In 14 minutes, this Anthropic engineer who created MCPs \n\nwill teach you more about building them right than \n\nmost developers figure out on their own  in months.  \n\nbookmark this today\n\nthis guide is literally the exact 2026 playbook to build and sell mcps to make $10k/mo https://t.co/FpJBqosabb", "created_at": "Wed May 06 10:07:47 +0000 2026", "lang": "en", "author": {"id": "1713062826175299584", "name": "Avid", "username": "Av1dlive"}, "metrics": {"likes": 436, "retweets": 59, "replies": 21, "views": "58743", "quotes": 1, "bookmarks": 772}, "is_retweet": false, "is_reply": false, "is_quote": true, "url": "https://x.com/Av1dlive/status/2051967150894772609"}, {"id": "2051822988098490823", "text": "been working on this for a bit based on pain points i've come across and i think it's coming together\n\nhttps://t.co/Hlw0ikJF6R\n\ns/o @dillon_mulroy better-result is pretty sick so i used that\n\nobviously some inspiration from Effect here, but going for a smaller easier api", "created_at": "Wed May 06 00:34:56 +0000 2026", "lang": "en", "author": {"id": "31472652", "name": "trav", "username": "techsavvytravvy"}, "metrics": {"likes": 44, "retweets": 2, "replies": 2, "views": "4707", "quotes": 0, "bookmarks": 14}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/techsavvytravvy/status/2051822988098490823"}, {"id": "2051996033345851583", "text": "AI has made writing code faster, but reviewing it is becoming the new bottleneck.\n\nIn this detailed handbook, Qudrat teaches you how to unblock PR reviews by moving team knowledge into files like AGENTS.md so AI reviewers understand context.\n\nYou’ll also learn how to build a https://t.co/l5kA7gc2uv", "created_at": "Wed May 06 12:02:33 +0000 2026", "lang": "en", "author": {"id": "1668100142", "name": "freeCodeCamp.org", "username": "freeCodeCamp"}, "metrics": {"likes": 89, "retweets": 12, "replies": 1, "views": "4463", "quotes": 0, "bookmarks": 50}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/freeCodeCamp/status/2051996033345851583"}, {"id": "2052078477105303603", "text": "In my latest newsletter I discuss how AI is changing our relationship with open source. From security to licensing to maintenance, there are a lot more unknowns than their are knowns at this point.\n\nhttps://t.co/7txYAhKhlM", "created_at": "Wed May 06 17:30:09 +0000 2026", "lang": "en", "author": {"id": "17633960", "name": "Nicholas C. Zakas", "username": "slicknet"}, "metrics": {"likes": 1, "retweets": 0, "replies": 2, "views": "298", "quotes": 0, "bookmarks": 0}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/slicknet/status/2052078477105303603"}]}}, {"meta": {"file": "data/2026-05-06/mine_20260506_194223.json", "fetched_at": "2026-05-06T19:42:23.171133+00:00", "source": "mine", "username": "_smaily_dolgy_", "count": 30}, "data": {"fetched_at": "2026-05-06T19:42:23.171133+00:00", "source": "mine", "username": "_smaily_dolgy_", "count": 30, "tweets": [{"id": "1350303412383047680", "text": "RT @macerub: @AlejandroPiad @alexbunardzic @_rodrigomd Software development is a knowledge-intensive activity. It cannot be compared with f…", "created_at": "Sat Jan 16 04:46:35 +0000 2021", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 1, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/1350303412383047680"}, {"id": "1106601741171245056", "text": "RT @buenosvinos: I just published ‘Domain-Driven Design Distilled’ book will have a Spanish translation https://t.co/UmmC88fn8O", "created_at": "Fri Mar 15 17:03:09 +0000 2019", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 19, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/1106601741171245056"}, {"id": "1016939803395452928", "text": "RT @joselcs: 1/ Ramon y Cajal seguramente no podía imaginar que su trabajo descubriendo las neuronas a finales del siglo XIX serviría de in…", "created_at": "Wed Jul 11 06:58:37 +0000 2018", "lang": "es", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 258, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/1016939803395452928"}, {"id": "1014601979182673920", "text": "RT @marcelpociot: Use our latest package to generate entity relation diagrams out of your @laravelphp model files.\nThe package is highly cu…", "created_at": "Wed Jul 04 20:08:56 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 97, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/1014601979182673920"}, {"id": "1014601888044634112", "text": "RT @marcelpociot: It happened to all of us @laravelphp devs: \n\nWe forgot to generate the APP_KEY, our .env.example has keys that our .env f…", "created_at": "Wed Jul 04 20:08:35 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 144, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/1014601888044634112"}, {"id": "1001489473069346816", "text": "RT @dunglas: Legit or not? #PHP traits https://t.co/PAvEqIHgqh", "created_at": "Tue May 29 15:44:31 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 1, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/1001489473069346816"}, {"id": "1000782934452916224", "text": "RT @mtrdesign: I just published “ReactPHP” https://t.co/oXVmzF99tH", "created_at": "Sun May 27 16:56:59 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 23, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/1000782934452916224"}, {"id": "999738684172853248", "text": "RT @matthieunapoli: Serverless, PHP and Bref: What about performances?\nTL/DR: use 512M memory or more, 20ms penalty to using PHP and Bref,…", "created_at": "Thu May 24 19:47:31 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 11, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/999738684172853248"}, {"id": "996647857359814656", "text": "RT @matthieunapoli: Finally managed to deploy Symfony as a serverless app on AWS lambda! Demo here https://t.co/fkDzqADNZD (it's just the w…", "created_at": "Wed May 16 07:05:40 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 23, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/996647857359814656"}, {"id": "993544421022093312", "text": "RT @freekmurze: Did you know you can destructure arrays in foreach loops? 🔥\n\n#php https://t.co/d5OEaZ3KPC", "created_at": "Mon May 07 17:33:43 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 336, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/993544421022093312"}, {"id": "993540599650406403", "text": "RT @symfony: Symfony 4.1.0-BETA1 released https://t.co/xa1k82aAyi #symfony", "created_at": "Mon May 07 17:18:32 +0000 2018", "lang": "und", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 36, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/993540599650406403"}, {"id": "984154516261101569", "text": "RT @MicroSrvsCity: #DOU #Microservices makes #Continuous #Monitoring easy. https://t.co/57CLe34tEb", "created_at": "Wed Apr 11 19:41:36 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 2, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/984154516261101569"}, {"id": "980890610889617409", "text": "RT @PicardTips: Picard management tip: Create an atmosphere of trust, not fear.", "created_at": "Mon Apr 02 19:32:00 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 295, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/980890610889617409"}, {"id": "980890548490919936", "text": "RT @fiunchinho: I strongly recommend you to watch the AlphaGo documentary. It's really nice https://t.co/vv36byMWQX", "created_at": "Mon Apr 02 19:31:45 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 5, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/980890548490919936"}, {"id": "980052099726790658", "text": "RT @rauschma: Didn’t see that one coming! The second edition of @martinfowler’s “Refactoring” will be in JavaScript.\nhttps://t.co/uPa2rsyxg…", "created_at": "Sat Mar 31 12:00:03 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 354, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/980052099726790658"}, {"id": "980050365730246661", "text": "RT @my_kiwi: . @samuelroze nous présente le nouveau composant @Symfony Messenger !\n\n#Symfony_Live https://t.co/YpUJospBcK", "created_at": "Sat Mar 31 11:53:10 +0000 2018", "lang": "fr", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 4, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/980050365730246661"}, {"id": "978941723211698176", "text": "RT @martinfowler: I expect to release a 2nd edition of the book \"Refactoring\", in the fall of this year\nhttps://t.co/018wWyiukL", "created_at": "Wed Mar 28 10:27:49 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 1229, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/978941723211698176"}, {"id": "978721625439862784", "text": "RT @CodeWisdom: “Without requirements or design, programming is the art of adding bugs to an empty text file.” - Louis Srygley", "created_at": "Tue Mar 27 19:53:13 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 380, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/978721625439862784"}, {"id": "978369709417656320", "text": "RT @dunglas: Excellent writing!\n\nDomain-driven-design: Moving forward with @ApiPlatform and @elastic https://t.co/gEGkUI5MND", "created_at": "Mon Mar 26 20:34:50 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 37, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/978369709417656320"}, {"id": "965323122554662913", "text": "RT @RebeccaPoulson: If your engineering team genuinely can't support junior developers, try re-phrasing the problem \"This candidate's too j…", "created_at": "Sun Feb 18 20:32:21 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 298, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/965323122554662913"}, {"id": "963512933702660097", "text": "RT @gvaireth: True story bro...\n#programming https://t.co/oGMQeF7hgr", "created_at": "Tue Feb 13 20:39:19 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 1309, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/963512933702660097"}, {"id": "963507182678487040", "text": "RT @freekmurze: Collections in @laravelphp are awesome!\n\nDon’t use Laravel? No problem! \n\nThanks to the awesome folks at @tightenco you can…", "created_at": "Tue Feb 13 20:16:28 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 11, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/963507182678487040"}, {"id": "961177483847585792", "text": "RT @nicolasgrekas: Goooaaal! #Symfony's router soon to be the fastest ever, with a nice diff stat if you don't mind 😀\nhttps://t.co/A1YwahR4…", "created_at": "Wed Feb 07 09:59:04 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 46, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": true, "url": "https://x.com/_smaily_dolgy_/status/961177483847585792"}, {"id": "953766338572537856", "text": "Good coding allows you to do good practice!", "created_at": "Wed Jan 17 23:09:49 +0000 2018", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 0, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/953766338572537856"}, {"id": "943777075617521664", "text": "RT @zhukserega: Blogged about @ReactPHP HTTP Server Middleware 🐘🤓 #php #reactphp\nhttps://t.co/o8TkPfQ79o https://t.co/pVl7H6UwbA", "created_at": "Thu Dec 21 09:36:04 +0000 2017", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 11, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/943777075617521664"}, {"id": "937401927058558976", "text": "RT @MCzernow: @BrendanEich can I ask for guidance in finding some reading about motivations behind making JS inheritance prototyoe based?", "created_at": "Sun Dec 03 19:23:30 +0000 2017", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 2, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/937401927058558976"}, {"id": "936515333661261824", "text": "RT @fabpot: #Symfony 4.0.0 is now out! Enjoy!", "created_at": "Fri Dec 01 08:40:29 +0000 2017", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 260, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/936515333661261824"}, {"id": "931463224297443328", "text": "RT @lydiaaguirre: #empleo ¿Nos ayudáis a encontrar al miembro del equipo que nos falta con un RT? Buscamos #desarrollador sólido en #php #s…", "created_at": "Fri Nov 17 10:05:13 +0000 2017", "lang": "es", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 46, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/931463224297443328"}, {"id": "914600919437778944", "text": "RT @NativeWired: Pairprogramming is not two people sitting at a conputer.\nIt is two people collaboration on a problem, who happen to use a…", "created_at": "Sun Oct 01 21:20:26 +0000 2017", "lang": "en", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 503, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": true, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/914600919437778944"}, {"id": "905898962070241280", "text": "Un jugador que destaca en la liga Inglesa, Alemana o Italiana se tiene que ir para #LaLiga inmediatamente.", "created_at": "Thu Sep 07 21:01:58 +0000 2017", "lang": "es", "author": {"id": "725432891858124800", "name": "Razvan Alin", "username": "_smaily_dolgy_"}, "metrics": {"likes": 0, "retweets": 0, "replies": 0, "views": null, "quotes": 0, "bookmarks": 0}, "is_retweet": false, "is_reply": false, "is_quote": false, "url": "https://x.com/_smaily_dolgy_/status/905898962070241280"}]}}];
+
+const INDEX_URL = null;  // unused in standalone mode
+
+const $ = (sel) => document.querySelector(sel);
+const tweetsEl = $("#tweets");
+const snapshotSelect = $("#snapshot-select");
+const sourceFilter = $("#source-filter");
+const typeFilter = $("#type-filter");
+const sortBy = $("#sort-by");
+const searchInput = $("#search");
+const statsEl = $("#stats");
+
+let allSnapshots = [];
+let currentTweets = [];
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+
+async function init() {
+  allSnapshots = EMBEDDED_SNAPSHOTS.map(s => s.meta);
+
+  if (allSnapshots.length === 0) {
+    showError("No hay snapshots todavía. Ejecuta el script de captura primero.");
+    return;
+  }
+
+  // Most recent first
+  allSnapshots.sort((a, b) => b.fetched_at.localeCompare(a.fetched_at));
+
+  populateSnapshots();
+
+  snapshotSelect.addEventListener("change", loadCurrentSelection);
+  sourceFilter.addEventListener("change", loadCurrentSelection);
+  typeFilter.addEventListener("change", render);
+  sortBy.addEventListener("change", render);
+  searchInput.addEventListener("input", render);
+
+  await loadCurrentSelection();
+}
+
+function populateSnapshots() {
+  // Two synthetic options first: latest of each source + all
+  const opts = [
+    { value: "all_latest", label: "Último de cada fuente (combinado)" },
+    { value: "all", label: "Todos los snapshots (combinado)" },
+  ];
+  for (const s of allSnapshots) {
+    const dateStr = new Date(s.fetched_at).toLocaleString();
+    opts.push({
+      value: s.file,
+      label: `${dateStr} — ${s.source} (@${s.username}) — ${s.count} tweets`,
+    });
+  }
+  snapshotSelect.innerHTML = opts
+    .map((o) => `<option value="${o.value}">${o.label}</option>`)
+    .join("");
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+async function loadCurrentSelection() {
+  const value = snapshotSelect.value;
+  const sourceWanted = sourceFilter.value;
+
+  let snapshotsToLoad = [];
+  if (value === "all") {
+    snapshotsToLoad = allSnapshots;
+  } else if (value === "all_latest") {
+    const seen = new Set();
+    for (const s of allSnapshots) {
+      if (!seen.has(s.source)) {
+        seen.add(s.source);
+        snapshotsToLoad.push(s);
+      }
+    }
+  } else {
+    snapshotsToLoad = allSnapshots.filter((s) => s.file === value);
+  }
+
+  if (sourceWanted !== "all") {
+    snapshotsToLoad = snapshotsToLoad.filter((s) => s.source === sourceWanted);
+  }
+
+  if (snapshotsToLoad.length === 0) {
+    currentTweets = [];
+    render();
+    return;
+  }
+
+  tweetsEl.innerHTML = '<div class="empty">Cargando...</div>';
+
+  const all = [];
+  for (const s of snapshotsToLoad) {
+    const bundle = EMBEDDED_SNAPSHOTS.find(b => b.meta.file === s.file);
+    if (bundle) {
+      for (const t of bundle.data.tweets) {
+        all.push({ ...t, _source: bundle.data.source, _fetched_at: bundle.data.fetched_at });
+      }
+    }
+  }
+
+  // Deduplicate by tweet id, keep first occurrence (most recent snapshot first)
+  const seen = new Set();
+  currentTweets = all.filter((t) => {
+    if (seen.has(t.id)) return false;
+    seen.add(t.id);
+    return true;
+  });
+
+  render();
+}
+
+// ---------------------------------------------------------------------------
+// Filtering + rendering
+// ---------------------------------------------------------------------------
+
+function applyFilters(tweets) {
+  let filtered = tweets;
+
+  const type = typeFilter.value;
+  if (type === "original") {
+    filtered = filtered.filter(
+      (t) => !t.is_retweet && !t.is_reply && !t.is_quote
+    );
+  } else if (type === "retweet") {
+    filtered = filtered.filter((t) => t.is_retweet);
+  } else if (type === "reply") {
+    filtered = filtered.filter((t) => t.is_reply);
+  } else if (type === "quote") {
+    filtered = filtered.filter((t) => t.is_quote);
+  }
+
+  const q = searchInput.value.trim().toLowerCase();
+  if (q) {
+    filtered = filtered.filter((t) => {
+      const haystack = [
+        t.text,
+        t.author?.name,
+        t.author?.username,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }
+
+  return filtered;
+}
+
+function applySort(tweets) {
+  const mode = sortBy.value;
+  const copy = [...tweets];
+  const numeric = (v) => {
+    if (v == null) return 0;
+    const n = parseInt(String(v).replace(/,/g, ""), 10);
+    return isNaN(n) ? 0 : n;
+  };
+
+  if (mode === "date_desc") {
+    copy.sort((a, b) => parseTwitterDate(b.created_at) - parseTwitterDate(a.created_at));
+  } else if (mode === "date_asc") {
+    copy.sort((a, b) => parseTwitterDate(a.created_at) - parseTwitterDate(b.created_at));
+  } else if (mode === "likes") {
+    copy.sort((a, b) => numeric(b.metrics?.likes) - numeric(a.metrics?.likes));
+  } else if (mode === "retweets") {
+    copy.sort((a, b) => numeric(b.metrics?.retweets) - numeric(a.metrics?.retweets));
+  } else if (mode === "replies") {
+    copy.sort((a, b) => numeric(b.metrics?.replies) - numeric(a.metrics?.replies));
+  } else if (mode === "views") {
+    copy.sort((a, b) => numeric(b.metrics?.views) - numeric(a.metrics?.views));
+  }
+  return copy;
+}
+
+function render() {
+  const filtered = applySort(applyFilters(currentTweets));
+
+  statsEl.textContent = `${filtered.length} de ${currentTweets.length} tweets`;
+
+  if (filtered.length === 0) {
+    tweetsEl.innerHTML = '<div class="empty">No hay tweets con estos filtros.</div>';
+    return;
+  }
+
+  tweetsEl.innerHTML = filtered.map(renderTweet).join("");
+}
+
+function renderTweet(t) {
+  const author = t.author || {};
+  const m = t.metrics || {};
+  const dateLocal = formatDate(t.created_at);
+  const text = linkify(escapeHtml(t.text || ""));
+
+  let context = "";
+  if (t.is_retweet) {
+    context = '<div class="tweet-context retweet">↻ Retweet</div>';
+  } else if (t.is_reply) {
+    context = '<div class="tweet-context reply">↩ Respuesta</div>';
+  } else if (t.is_quote) {
+    context = '<div class="tweet-context quote">❝ Cita</div>';
+  }
+
+  const langBadge = t.lang ? `<span class="lang-badge">${escapeHtml(t.lang)}</span>` : "";
+
+  return `
+    <article class="tweet">
+      ${context}
+      <div class="tweet-header">
+        <span class="tweet-author">${escapeHtml(author.name || "?")}</span>
+        <span class="tweet-handle">@${escapeHtml(author.username || "?")}</span>
+        ${langBadge}
+        <span class="tweet-date">${dateLocal}</span>
+      </div>
+      <div class="tweet-text">${text}</div>
+      <div class="tweet-metrics">
+        <span class="metric">💬 <strong>${formatNum(m.replies)}</strong></span>
+        <span class="metric">🔁 <strong>${formatNum(m.retweets)}</strong></span>
+        <span class="metric">❤️ <strong>${formatNum(m.likes)}</strong></span>
+        <span class="metric">🔖 <strong>${formatNum(m.bookmarks)}</strong></span>
+        <span class="metric">👁 <strong>${formatNum(m.views)}</strong></span>
+      </div>
+      ${t.url ? `<a class="tweet-link" href="${t.url}" target="_blank" rel="noopener">${escapeHtml(t.url)}</a>` : ""}
+    </article>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function linkify(html) {
+  return html.replace(
+    /(https?:\/\/[^\s<]+)/g,
+    '<a href="$1" target="_blank" rel="noopener">$1</a>'
+  );
+}
+
+function parseTwitterDate(s) {
+  if (!s) return 0;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
+function formatDate(s) {
+  const t = parseTwitterDate(s);
+  if (!t) return "";
+  const d = new Date(t);
+  return d.toLocaleString();
+}
+
+function formatNum(v) {
+  if (v == null || v === "") return "0";
+  const n = parseInt(String(v).replace(/,/g, ""), 10);
+  if (isNaN(n)) return "0";
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
+  return n.toString();
+}
+
+function showError(msg) {
+  tweetsEl.innerHTML = `<div class="error">${msg}</div>`;
+}
+
+init();
+
+</script>
+</body>
+</html>
