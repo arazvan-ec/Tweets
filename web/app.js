@@ -86,7 +86,7 @@ async function onRefreshClick() {
   refreshBtn.classList.add("loading");
   refreshLabel.textContent = "Capturando…";
   try {
-    const resp = await fetch("/api/refresh?source=mine&max=50", { method: "POST" });
+    const resp = await fetch("/api/refresh?source=timeline&max=50", { method: "POST" });
     if (!resp.ok) {
       const text = await resp.text();
       throw new Error(text || `HTTP ${resp.status}`);
@@ -458,50 +458,59 @@ function renderQuote(q) {
 function renderText(t) {
   let text = t.text || "";
 
-  // Remove t.co media-shortener URLs at the end (they appear when there's media)
+  // Strip t.co media URLs that appear trailing the text (X already shows the
+  // image inline, the URL is just plumbing).
   if (Array.isArray(t.media) && t.media.length > 0) {
     for (const m of t.media) {
-      if (m.url) {
-        text = text.split(m.url).join("");
-      }
+      if (m.url) text = text.split(m.url).join("");
     }
   }
   text = text.trim();
 
-  let html = escapeHtml(text);
-
-  // Linkify URLs (replace t.co with display URLs)
-  if (Array.isArray(t.urls)) {
-    for (const u of t.urls) {
-      if (!u.url) continue;
-      const escUrl = escapeHtml(u.url);
-      const display = u.display_url || u.expanded_url || u.url;
-      const expanded = u.expanded_url || u.url;
-      html = html.split(escUrl).join(
-        `<a href="${escapeAttr(expanded)}" target="_blank" rel="noopener">${escapeHtml(display)}</a>`
-      );
+  // Map of raw URL -> { display, expanded } for the t.co shorteners that came
+  // attached to this tweet. Anything not in the map is rendered as a bare link.
+  const urlMap = new Map();
+  for (const u of (t.urls || [])) {
+    if (u && u.url) {
+      urlMap.set(u.url, {
+        display: u.display_url || u.expanded_url || u.url,
+        expanded: u.expanded_url || u.url,
+      });
     }
   }
 
-  // Linkify any remaining bare URLs
-  html = html.replace(/(https?:\/\/[^\s<]+)/g, (url) => {
-    if (url.includes(">") || url.includes("</a")) return url;
-    return `<a href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a>`;
-  });
+  // Tokenize on URLs first so the per-piece replacements never see content
+  // that's already been wrapped in an <a> tag.
+  const URL_RE = /https?:\/\/\S+/g;
+  const pieces = [];
+  let last = 0;
+  let m;
+  while ((m = URL_RE.exec(text)) !== null) {
+    if (m.index > last) pieces.push({ kind: "text", value: text.slice(last, m.index) });
+    pieces.push({ kind: "url", value: m[0] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) pieces.push({ kind: "text", value: text.slice(last) });
 
-  // Linkify @mentions
-  html = html.replace(/(^|\s)(@\w+)/g, (full, pre, mention) => {
-    const username = mention.slice(1);
-    return `${pre}<a href="https://x.com/${escapeAttr(username)}" target="_blank" rel="noopener">${escapeHtml(mention)}</a>`;
-  });
-
-  // Linkify #hashtags
-  html = html.replace(/(^|\s)(#[\wÀ-ÿĀ-ɏ一-鿿_]+)/g, (full, pre, tag) => {
-    const t = tag.slice(1);
-    return `${pre}<a href="https://x.com/hashtag/${escapeAttr(t)}" target="_blank" rel="noopener">${escapeHtml(tag)}</a>`;
-  });
-
-  return html;
+  return pieces.map((p) => {
+    if (p.kind === "url") {
+      const mapping = urlMap.get(p.value);
+      const display = mapping ? mapping.display : p.value;
+      const expanded = mapping ? mapping.expanded : p.value;
+      return `<a href="${escapeAttr(expanded)}" target="_blank" rel="noopener">${escapeHtml(display)}</a>`;
+    }
+    // Plain text: escape, then linkify mentions and hashtags.
+    let h = escapeHtml(p.value);
+    h = h.replace(/(^|\s)(@\w+)/g, (full, pre, mention) => {
+      const username = mention.slice(1);
+      return `${pre}<a href="https://x.com/${escapeAttr(username)}" target="_blank" rel="noopener">${escapeHtml(mention)}</a>`;
+    });
+    h = h.replace(/(^|\s)(#[\wÀ-ÿĀ-ɏ一-鿿_]+)/g, (full, pre, tag) => {
+      const slug = tag.slice(1);
+      return `${pre}<a href="https://x.com/hashtag/${escapeAttr(slug)}" target="_blank" rel="noopener">${escapeHtml(tag)}</a>`;
+    });
+    return h;
+  }).join("");
 }
 
 function renderMedia(media) {
