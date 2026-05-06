@@ -97,7 +97,7 @@ async function init() {
   searchInput.addEventListener("input", () => render());
 
   // Refresh
-  refreshBtn.addEventListener("click", () => triggerRefresh(currentTab));
+  refreshBtn.addEventListener("click", () => triggerRefresh(false));
 
   // Tweets click delegation (replies, compose, like/RT/bookmark, profile)
   contentEl.addEventListener("click", onContentClick);
@@ -117,9 +117,10 @@ async function init() {
   await refreshSnapshotList();
   handleRoute();
 
-  // Auto-refresh once at load if data is older than 30s
+  // Auto-refresh once at load if data is older than 30s — same call as
+  // clicking Actualizar manually, just silent.
   if (snapshots.length === 0 || isStale(30)) {
-    triggerRefresh(currentTab, /*silent=*/true);
+    triggerRefresh(/*silent=*/true);
   }
 }
 
@@ -257,17 +258,25 @@ function setupInfiniteScroll() {
 // Refresh trigger
 // ---------------------------------------------------------------------------
 
-async function triggerRefresh(source, silent = false) {
+async function triggerRefresh(silent = false) {
   if (refreshBtn.disabled) return;
   refreshBtn.disabled = true;
   refreshBtn.classList.add("loading");
   if (!silent) refreshLabel.textContent = "Capturando…";
+
+  // Always refresh both Home feeds — same payload as the cron service.
+  // The button needs to do the same thing as opening the page for the
+  // first time: get the freshest possible snapshot of everything.
   try {
-    const apiSource = source === "mine" ? "mine" : (source === "for_you" || source === "following" ? source : "all_feeds");
-    const resp = await fetch(`/api/refresh?source=${apiSource}&max=50`, { method: "POST" });
+    const resp = await fetch(`/api/refresh?source=all_feeds&max=50`, { method: "POST" });
     if (!resp.ok) throw new Error(await resp.text() || `HTTP ${resp.status}`);
-    await resp.json();
-    if (!silent) showToast("✓ Datos actualizados", "success");
+    const data = await resp.json();
+    if (!silent) {
+      const counts = (data.latest_snapshots || [])
+        .map((s) => `${SOURCE_LABEL[s.source] || s.source}: ${s.count}`)
+        .join(" · ");
+      showToast(`✓ Capturado ${counts || "snapshot"}`, "success");
+    }
     await refreshSnapshotList();
     if (route.kind === "home") await loadFirstPage();
   } catch (e) {
