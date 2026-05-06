@@ -1,0 +1,977 @@
+{
+  "fetched_at": "2026-05-06T20:21:15.283927+00:00",
+  "source": "mine",
+  "username": "_smaily_dolgy_",
+  "count": 10,
+  "tweets": [
+    {
+      "id": "1350303412383047680",
+      "text": "RT @macerub: @AlejandroPiad @alexbunardzic @_rodrigomd Software development is a knowledge-intensive activity. It cannot be compared with f…",
+      "created_at": "Sat Jan 16 04:46:35 +0000 2021",
+      "lang": "en",
+      "author": {
+        "id": "725432891858124800",
+        "name": "Razvan Alin",
+        "username": "_smaily_dolgy_",
+        "avatar": "https://pbs.twimg.com/profile_images/728580669442560002/lxvmSQTE_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 1,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_smaily_dolgy_/status/1350303412383047680",
+      "media": [],
+      "urls": [],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "1244691114000625674",
+          "name": "Mario Cervera",
+          "username": "macerub"
+        },
+        {
+          "id": "18820495",
+          "name": "Attention Alchemist",
+          "username": "alexbunardzic"
+        },
+        {
+          "id": "1188627283780820992",
+          "name": "Rodrigo",
+          "username": "_rodrigomd"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "1350276408497627138",
+        "text": "@AlejandroPiad @alexbunardzic @_rodrigomd Software development is a knowledge-intensive activity. It cannot be compared with factories.",
+        "created_at": "Sat Jan 16 02:59:17 +0000 2021",
+        "lang": "en",
+        "author": {
+          "id": "1244691114000625674",
+          "name": "Mario Cervera",
+          "username": "macerub",
+          "avatar": "https://pbs.twimg.com/profile_images/1244691495329976328/yc64CdEM_normal.jpg",
+          "verified": false,
+          "is_blue_verified": false
+        },
+        "metrics": {
+          "likes": 2,
+          "retweets": 1,
+          "replies": 2,
+          "views": null,
+          "quotes": 0,
+          "bookmarks": 0
+        },
+        "is_retweet": false,
+        "is_reply": true,
+        "is_quote": false,
+        "in_reply_to_id": "1350276110307700740",
+        "url": "https://x.com/macerub/status/1350276408497627138",
+        "media": [],
+        "urls": [],
+        "hashtags": [],
+        "user_mentions": [
+          {
+            "id": "18820495",
+            "name": "Attention Alchemist",
+            "username": "alexbunardzic"
+          },
+          {
+            "id": "1188627283780820992",
+            "name": "Rodrigo",
+            "username": "_rodrigomd"
+          }
+        ],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "1106601741171245056",
+      "text": "RT @buenosvinos: I just published ‘Domain-Driven Design Distilled’ book will have a Spanish translation https://t.co/UmmC88fn8O",
+      "created_at": "Fri Mar 15 17:03:09 +0000 2019",
+      "lang": "en",
+      "author": {
+        "id": "725432891858124800",
+        "name": "Razvan Alin",
+        "username": "_smaily_dolgy_",
+        "avatar": "https://pbs.twimg.com/profile_images/728580669442560002/lxvmSQTE_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 19,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_smaily_dolgy_/status/1106601741171245056",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/UmmC88fn8O",
+          "expanded_url": "https://medium.com/p/https-medium-com-carlosbuenosvinos-domain-driven-design-distilled-book-will-have-a-spanish-translation-15ab043225e2",
+          "display_url": "medium.com/p/https-medium…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "22805380",
+          "name": "Carlos Buenosvinos",
+          "username": "buenosvinos"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "1106480406700929025",
+        "text": "I just published ‘Domain-Driven Design Distilled’ book will have a Spanish translation https://t.co/UmmC88fn8O",
+        "created_at": "Fri Mar 15 09:01:01 +0000 2019",
+        "lang": "en",
+        "author": {
+          "id": "22805380",
+          "name": "Carlos Buenosvinos",
+          "username": "buenosvinos",
+          "avatar": "https://pbs.twimg.com/profile_images/1289162634059755520/QhkRRCik_normal.jpg",
+          "verified": false,
+          "is_blue_verified": false
+        },
+        "metrics": {
+          "likes": 80,
+          "retweets": 19,
+          "replies": 1,
+          "views": null,
+          "quotes": 0,
+          "bookmarks": 4
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/buenosvinos/status/1106480406700929025",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/UmmC88fn8O",
+            "expanded_url": "https://medium.com/p/https-medium-com-carlosbuenosvinos-domain-driven-design-distilled-book-will-have-a-spanish-translation-15ab043225e2",
+            "display_url": "medium.com/p/https-medium…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "1016939803395452928",
+      "text": "RT @joselcs: 1/ Ramon y Cajal seguramente no podía imaginar que su trabajo descubriendo las neuronas a finales del siglo XIX serviría de in…",
+      "created_at": "Wed Jul 11 06:58:37 +0000 2018",
+      "lang": "es",
+      "author": {
+        "id": "725432891858124800",
+        "name": "Razvan Alin",
+        "username": "_smaily_dolgy_",
+        "avatar": "https://pbs.twimg.com/profile_images/728580669442560002/lxvmSQTE_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 258,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_smaily_dolgy_/status/1016939803395452928",
+      "media": [],
+      "urls": [],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "20797734",
+          "name": "Jose Luis Calvo",
+          "username": "joselcs"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "1015975987517915136",
+        "text": "1/ Ramon y Cajal seguramente no podía imaginar que su trabajo descubriendo las neuronas a finales del siglo XIX serviría de inspiración para desarrollar inteligencia artificial mediante redes neuronales. \n\n¿Cómo funciona una red neuronal?\n\nAbro hilo 👇 https://t.co/qoiEu7REcs",
+        "created_at": "Sun Jul 08 15:08:46 +0000 2018",
+        "lang": "es",
+        "author": {
+          "id": "20797734",
+          "name": "Jose Luis Calvo",
+          "username": "joselcs",
+          "avatar": "https://pbs.twimg.com/profile_images/535172392985714688/7YdnKaB__normal.jpeg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 417,
+          "retweets": 258,
+          "replies": 9,
+          "views": null,
+          "quotes": 27,
+          "bookmarks": 42
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/joselcs/status/1015975987517915136",
+        "media": [
+          {
+            "id": "1015974734478106624",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/Dhl3o11W4AAu5PJ.jpg",
+            "expanded_url": "https://x.com/joselcs/status/1015975987517915136/photo/1",
+            "display_url": "pic.x.com/qoiEu7REcs",
+            "url": "https://t.co/qoiEu7REcs",
+            "width": 1200,
+            "height": 876
+          }
+        ],
+        "urls": [],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "1014601979182673920",
+      "text": "RT @marcelpociot: Use our latest package to generate entity relation diagrams out of your @laravelphp model files.\nThe package is highly cu…",
+      "created_at": "Wed Jul 04 20:08:56 +0000 2018",
+      "lang": "en",
+      "author": {
+        "id": "725432891858124800",
+        "name": "Razvan Alin",
+        "username": "_smaily_dolgy_",
+        "avatar": "https://pbs.twimg.com/profile_images/728580669442560002/lxvmSQTE_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 97,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_smaily_dolgy_/status/1014601979182673920",
+      "media": [],
+      "urls": [],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "132971183",
+          "name": "Marcel Pociot 🧪",
+          "username": "marcelpociot"
+        },
+        {
+          "id": "301440448",
+          "name": "Laravel",
+          "username": "laravelphp"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "1014124852616278016",
+        "text": "Use our latest package to generate entity relation diagrams out of your @laravelphp model files.\nThe package is highly customizable and can inspect your table schema.\n\nHere are two examples taken from the @laravelio codebase.\n\nhttps://t.co/N9q4mF2vl7 https://t.co/50Gjls3juR",
+        "created_at": "Tue Jul 03 12:33:01 +0000 2018",
+        "lang": "en",
+        "author": {
+          "id": "132971183",
+          "name": "Marcel Pociot 🧪",
+          "username": "marcelpociot",
+          "avatar": "https://pbs.twimg.com/profile_images/1572564016916008961/n7drNq_E_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 297,
+          "retweets": 97,
+          "replies": 6,
+          "views": null,
+          "quotes": 8,
+          "bookmarks": 13
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/marcelpociot/status/1014124852616278016",
+        "media": [
+          {
+            "id": "1014124462688620545",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/DhLk02SW0AEEC8o.png",
+            "expanded_url": "https://x.com/marcelpociot/status/1014124852616278016/photo/1",
+            "display_url": "pic.x.com/50Gjls3juR",
+            "url": "https://t.co/50Gjls3juR",
+            "width": 890,
+            "height": 1066
+          },
+          {
+            "id": "1014124462743130112",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/DhLk02fWkAAu0EC.png",
+            "expanded_url": "https://x.com/marcelpociot/status/1014124852616278016/photo/1",
+            "display_url": "pic.x.com/50Gjls3juR",
+            "url": "https://t.co/50Gjls3juR",
+            "width": 1056,
+            "height": 1465
+          }
+        ],
+        "urls": [
+          {
+            "url": "https://t.co/N9q4mF2vl7",
+            "expanded_url": "https://github.com/beyondcode/laravel-er-diagram-generator",
+            "display_url": "github.com/beyondcode/lar…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [
+          {
+            "id": "301440448",
+            "name": "Laravel",
+            "username": "laravelphp"
+          },
+          {
+            "id": "920674514",
+            "name": "Laravel.io",
+            "username": "laravelio"
+          }
+        ],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "1014601888044634112",
+      "text": "RT @marcelpociot: It happened to all of us @laravelphp devs: \n\nWe forgot to generate the APP_KEY, our .env.example has keys that our .env f…",
+      "created_at": "Wed Jul 04 20:08:35 +0000 2018",
+      "lang": "en",
+      "author": {
+        "id": "725432891858124800",
+        "name": "Razvan Alin",
+        "username": "_smaily_dolgy_",
+        "avatar": "https://pbs.twimg.com/profile_images/728580669442560002/lxvmSQTE_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 144,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_smaily_dolgy_/status/1014601888044634112",
+      "media": [],
+      "urls": [],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "132971183",
+          "name": "Marcel Pociot 🧪",
+          "username": "marcelpociot"
+        },
+        {
+          "id": "301440448",
+          "name": "Laravel",
+          "username": "laravelphp"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "1014539887322820608",
+        "text": "It happened to all of us @laravelphp devs: \n\nWe forgot to generate the APP_KEY, our .env.example has keys that our .env file is missing, we forgot to do a composer install, ...\n\nHere's our Laravel Self Diagnosis package to help you 🚑\nhttps://t.co/wZdSpyCfn9 https://t.co/qaWlDyJBuf",
+        "created_at": "Wed Jul 04 16:02:13 +0000 2018",
+        "lang": "en",
+        "author": {
+          "id": "132971183",
+          "name": "Marcel Pociot 🧪",
+          "username": "marcelpociot",
+          "avatar": "https://pbs.twimg.com/profile_images/1572564016916008961/n7drNq_E_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 489,
+          "retweets": 144,
+          "replies": 14,
+          "views": null,
+          "quotes": 14,
+          "bookmarks": 17
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/marcelpociot/status/1014539887322820608",
+        "media": [
+          {
+            "id": "1014538734719655937",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/DhRdmp3W4AEkj6Y.jpg",
+            "expanded_url": "https://x.com/marcelpociot/status/1014539887322820608/photo/1",
+            "display_url": "pic.x.com/qaWlDyJBuf",
+            "url": "https://t.co/qaWlDyJBuf",
+            "width": 747,
+            "height": 312
+          },
+          {
+            "id": "1014538734715490304",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/DhRdmp2XUAAj1-7.jpg",
+            "expanded_url": "https://x.com/marcelpociot/status/1014539887322820608/photo/1",
+            "display_url": "pic.x.com/qaWlDyJBuf",
+            "url": "https://t.co/qaWlDyJBuf",
+            "width": 550,
+            "height": 215
+          }
+        ],
+        "urls": [
+          {
+            "url": "https://t.co/wZdSpyCfn9",
+            "expanded_url": "https://github.com/beyondcode/laravel-self-diagnosis",
+            "display_url": "github.com/beyondcode/lar…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [
+          {
+            "id": "301440448",
+            "name": "Laravel",
+            "username": "laravelphp"
+          }
+        ],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "1001489473069346816",
+      "text": "RT @dunglas: Legit or not? #PHP traits https://t.co/PAvEqIHgqh",
+      "created_at": "Tue May 29 15:44:31 +0000 2018",
+      "lang": "en",
+      "author": {
+        "id": "725432891858124800",
+        "name": "Razvan Alin",
+        "username": "_smaily_dolgy_",
+        "avatar": "https://pbs.twimg.com/profile_images/728580669442560002/lxvmSQTE_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 1,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_smaily_dolgy_/status/1001489473069346816",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/PAvEqIHgqh",
+          "expanded_url": "https://github.com/api-platform/core/pull/1963/files#diff-91670dfd46827b5a5f232cfa9428ff35R32",
+          "display_url": "github.com/api-platform/c…"
+        }
+      ],
+      "hashtags": [
+        "PHP"
+      ],
+      "user_mentions": [
+        {
+          "id": "14364083",
+          "name": "Kévin Dunglas",
+          "username": "dunglas"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "999180323408744448",
+        "text": "Legit or not? #PHP traits https://t.co/PAvEqIHgqh",
+        "created_at": "Wed May 23 06:48:47 +0000 2018",
+        "lang": "en",
+        "author": {
+          "id": "14364083",
+          "name": "Kévin Dunglas",
+          "username": "dunglas",
+          "avatar": "https://pbs.twimg.com/profile_images/1892188992721862657/wWy6Ck9u_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 4,
+          "retweets": 1,
+          "replies": 0,
+          "views": null,
+          "quotes": 0,
+          "bookmarks": 0
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/dunglas/status/999180323408744448",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/PAvEqIHgqh",
+            "expanded_url": "https://github.com/api-platform/core/pull/1963/files#diff-91670dfd46827b5a5f232cfa9428ff35R32",
+            "display_url": "github.com/api-platform/c…"
+          }
+        ],
+        "hashtags": [
+          "PHP"
+        ],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "1000782934452916224",
+      "text": "RT @mtrdesign: I just published “ReactPHP” https://t.co/oXVmzF99tH",
+      "created_at": "Sun May 27 16:56:59 +0000 2018",
+      "lang": "en",
+      "author": {
+        "id": "725432891858124800",
+        "name": "Razvan Alin",
+        "username": "_smaily_dolgy_",
+        "avatar": "https://pbs.twimg.com/profile_images/728580669442560002/lxvmSQTE_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 23,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_smaily_dolgy_/status/1000782934452916224",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/oXVmzF99tH",
+          "expanded_url": "https://medium.com/p/reactphp-6c65735138a0",
+          "display_url": "medium.com/p/reactphp-6c6…"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "19372795",
+          "name": "MTR Design",
+          "username": "mtrdesign"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "1000754668170088448",
+        "text": "I just published “ReactPHP” https://t.co/oXVmzF99tH",
+        "created_at": "Sun May 27 15:04:40 +0000 2018",
+        "lang": "en",
+        "author": {
+          "id": "19372795",
+          "name": "MTR Design",
+          "username": "mtrdesign",
+          "avatar": "https://pbs.twimg.com/profile_images/3112265310/991d96ca54b6e76e49686d07dcd5c81a_normal.png",
+          "verified": false,
+          "is_blue_verified": false
+        },
+        "metrics": {
+          "likes": 48,
+          "retweets": 23,
+          "replies": 1,
+          "views": null,
+          "quotes": 3,
+          "bookmarks": 5
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/mtrdesign/status/1000754668170088448",
+        "media": [],
+        "urls": [
+          {
+            "url": "https://t.co/oXVmzF99tH",
+            "expanded_url": "https://medium.com/p/reactphp-6c65735138a0",
+            "display_url": "medium.com/p/reactphp-6c6…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "999738684172853248",
+      "text": "RT @matthieunapoli: Serverless, PHP and Bref: What about performances?\nTL/DR: use 512M memory or more, 20ms penalty to using PHP and Bref,…",
+      "created_at": "Thu May 24 19:47:31 +0000 2018",
+      "lang": "en",
+      "author": {
+        "id": "725432891858124800",
+        "name": "Razvan Alin",
+        "username": "_smaily_dolgy_",
+        "avatar": "https://pbs.twimg.com/profile_images/728580669442560002/lxvmSQTE_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 11,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_smaily_dolgy_/status/999738684172853248",
+      "media": [],
+      "urls": [],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "857755658",
+          "name": "Matthieu Napoli",
+          "username": "matthieunapoli"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "999579141052694528",
+        "text": "Serverless, PHP and Bref: What about performances?\nTL/DR: use 512M memory or more, 20ms penalty to using PHP and Bref, PHP cold starts are lower than Java and C# around 230ms\n👉 https://t.co/NTfSPn0CAK https://t.co/hJ6mq6RlaI",
+        "created_at": "Thu May 24 09:13:33 +0000 2018",
+        "lang": "en",
+        "author": {
+          "id": "857755658",
+          "name": "Matthieu Napoli",
+          "username": "matthieunapoli",
+          "avatar": "https://pbs.twimg.com/profile_images/1877367584661655552/a4cBU16D_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 29,
+          "retweets": 11,
+          "replies": 1,
+          "views": null,
+          "quotes": 0,
+          "bookmarks": 0
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/matthieunapoli/status/999579141052694528",
+        "media": [
+          {
+            "id": "999578790127783936",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/Dd83nRaU0AAMuC8.jpg",
+            "expanded_url": "https://x.com/matthieunapoli/status/999579141052694528/photo/1",
+            "display_url": "pic.x.com/hJ6mq6RlaI",
+            "url": "https://t.co/hJ6mq6RlaI",
+            "width": 512,
+            "height": 394
+          },
+          {
+            "id": "999578817810190336",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/Dd83o4iU0AAbATc.jpg",
+            "expanded_url": "https://x.com/matthieunapoli/status/999579141052694528/photo/1",
+            "display_url": "pic.x.com/hJ6mq6RlaI",
+            "url": "https://t.co/hJ6mq6RlaI",
+            "width": 703,
+            "height": 240
+          },
+          {
+            "id": "999578817818591232",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/Dd83o4kVAAATEiL.jpg",
+            "expanded_url": "https://x.com/matthieunapoli/status/999579141052694528/photo/1",
+            "display_url": "pic.x.com/hJ6mq6RlaI",
+            "url": "https://t.co/hJ6mq6RlaI",
+            "width": 531,
+            "height": 401
+          }
+        ],
+        "urls": [
+          {
+            "url": "https://t.co/NTfSPn0CAK",
+            "expanded_url": "http://mnapoli.fr/serverless-php-performances/",
+            "display_url": "mnapoli.fr/serverless-php…"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "996647857359814656",
+      "text": "RT @matthieunapoli: Finally managed to deploy Symfony as a serverless app on AWS lambda! Demo here https://t.co/fkDzqADNZD (it's just the w…",
+      "created_at": "Wed May 16 07:05:40 +0000 2018",
+      "lang": "en",
+      "author": {
+        "id": "725432891858124800",
+        "name": "Razvan Alin",
+        "username": "_smaily_dolgy_",
+        "avatar": "https://pbs.twimg.com/profile_images/728580669442560002/lxvmSQTE_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 23,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_smaily_dolgy_/status/996647857359814656",
+      "media": [],
+      "urls": [
+        {
+          "url": "https://t.co/fkDzqADNZD",
+          "expanded_url": "https://7oaryq3rzl.execute-api.eu-west-3.amazonaws.com/dev",
+          "display_url": "…l.execute-api.eu-west-3.amazonaws.com/dev"
+        }
+      ],
+      "hashtags": [],
+      "user_mentions": [
+        {
+          "id": "857755658",
+          "name": "Matthieu Napoli",
+          "username": "matthieunapoli"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "996296761101770753",
+        "text": "Finally managed to deploy Symfony as a serverless app on AWS lambda! Demo here https://t.co/fkDzqADNZD (it's just the welcome page for now, the compilation/cache was enough pain ^^)\nBase response time could be better (see the screenshot) but this is just a first version. https://t.co/oVMY2f3K8h",
+        "created_at": "Tue May 15 07:50:32 +0000 2018",
+        "lang": "en",
+        "author": {
+          "id": "857755658",
+          "name": "Matthieu Napoli",
+          "username": "matthieunapoli",
+          "avatar": "https://pbs.twimg.com/profile_images/1877367584661655552/a4cBU16D_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 57,
+          "retweets": 23,
+          "replies": 3,
+          "views": null,
+          "quotes": 2,
+          "bookmarks": 1
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/matthieunapoli/status/996296761101770753",
+        "media": [
+          {
+            "id": "996296055405752321",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/DdON-9mVMAE9oJw.jpg",
+            "expanded_url": "https://x.com/matthieunapoli/status/996296761101770753/photo/1",
+            "display_url": "pic.x.com/oVMY2f3K8h",
+            "url": "https://t.co/oVMY2f3K8h",
+            "width": 642,
+            "height": 301
+          }
+        ],
+        "urls": [
+          {
+            "url": "https://t.co/fkDzqADNZD",
+            "expanded_url": "https://7oaryq3rzl.execute-api.eu-west-3.amazonaws.com/dev",
+            "display_url": "…l.execute-api.eu-west-3.amazonaws.com/dev"
+          }
+        ],
+        "hashtags": [],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    },
+    {
+      "id": "993544421022093312",
+      "text": "RT @freekmurze: Did you know you can destructure arrays in foreach loops? 🔥\n\n#php https://t.co/d5OEaZ3KPC",
+      "created_at": "Mon May 07 17:33:43 +0000 2018",
+      "lang": "en",
+      "author": {
+        "id": "725432891858124800",
+        "name": "Razvan Alin",
+        "username": "_smaily_dolgy_",
+        "avatar": "https://pbs.twimg.com/profile_images/728580669442560002/lxvmSQTE_normal.jpg",
+        "verified": false,
+        "is_blue_verified": false
+      },
+      "metrics": {
+        "likes": 0,
+        "retweets": 336,
+        "replies": 0,
+        "views": null,
+        "quotes": 0,
+        "bookmarks": 0
+      },
+      "is_retweet": true,
+      "is_reply": false,
+      "is_quote": false,
+      "in_reply_to_id": null,
+      "url": "https://x.com/_smaily_dolgy_/status/993544421022093312",
+      "media": [
+        {
+          "id": "992332729067954177",
+          "type": "photo",
+          "media_url": "https://pbs.twimg.com/media/DcV5XAcW4AEhmWE.jpg",
+          "expanded_url": "https://x.com/freekmurze/status/992332735476887552/photo/1",
+          "display_url": "pic.x.com/d5OEaZ3KPC",
+          "url": "https://t.co/d5OEaZ3KPC",
+          "width": 691,
+          "height": 632
+        }
+      ],
+      "urls": [],
+      "hashtags": [
+        "php"
+      ],
+      "user_mentions": [
+        {
+          "id": "97178022",
+          "name": "Freek Van der Herten",
+          "username": "freekmurze"
+        }
+      ],
+      "quoted_tweet": null,
+      "retweeted_tweet": {
+        "id": "992332735476887552",
+        "text": "Did you know you can destructure arrays in foreach loops? 🔥\n\n#php https://t.co/d5OEaZ3KPC",
+        "created_at": "Fri May 04 09:18:55 +0000 2018",
+        "lang": "en",
+        "author": {
+          "id": "97178022",
+          "name": "Freek Van der Herten",
+          "username": "freekmurze",
+          "avatar": "https://pbs.twimg.com/profile_images/1956747516428337152/3Hbvojuf_normal.jpg",
+          "verified": false,
+          "is_blue_verified": true
+        },
+        "metrics": {
+          "likes": 890,
+          "retweets": 336,
+          "replies": 28,
+          "views": null,
+          "quotes": 28,
+          "bookmarks": 24
+        },
+        "is_retweet": false,
+        "is_reply": false,
+        "is_quote": false,
+        "in_reply_to_id": null,
+        "url": "https://x.com/freekmurze/status/992332735476887552",
+        "media": [
+          {
+            "id": "992332729067954177",
+            "type": "photo",
+            "media_url": "https://pbs.twimg.com/media/DcV5XAcW4AEhmWE.jpg",
+            "expanded_url": "https://x.com/freekmurze/status/992332735476887552/photo/1",
+            "display_url": "pic.x.com/d5OEaZ3KPC",
+            "url": "https://t.co/d5OEaZ3KPC",
+            "width": 691,
+            "height": 632
+          }
+        ],
+        "urls": [],
+        "hashtags": [
+          "php"
+        ],
+        "user_mentions": [],
+        "quoted_tweet": null,
+        "retweeted_tweet": null,
+        "possibly_sensitive": false
+      },
+      "possibly_sensitive": false
+    }
+  ]
+}

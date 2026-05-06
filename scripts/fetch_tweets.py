@@ -227,7 +227,7 @@ async def fetch_own_tweets(client: twikit.Client, username: str, max_tweets: int
 # Storage
 # ---------------------------------------------------------------------------
 
-def save_snapshot(tweets: list[dict], source: str, username: str):
+def save_snapshot(tweets: list[dict], source: str, username: str, supabase_client=None):
     now = datetime.now(timezone.utc)
     date_str = now.strftime("%Y-%m-%d")
     ts_str = now.strftime("%Y%m%d_%H%M%S")
@@ -249,6 +249,14 @@ def save_snapshot(tweets: list[dict], source: str, username: str):
     rel = snapshot_file.relative_to(DATA_DIR.parent)
     print(f"  Saved {len(tweets)} tweets -> {rel}")
     _update_index(rel, snapshot)
+
+    if supabase_client is not None and tweets:
+        try:
+            from sync_to_supabase import sync_snapshot
+            meta = {"file": str(rel)}
+            sync_snapshot(supabase_client, meta, snapshot)
+        except Exception as e:
+            print(f"  WARNING: Supabase sync failed: {e}")
 
 
 def _update_index(relative_path: Path, snapshot: dict):
@@ -272,17 +280,27 @@ def _update_index(relative_path: Path, snapshot: dict):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, push_supabase: bool):
     username = os.getenv("TWITTER_USERNAME")
     client = await get_client()
 
+    supabase_client = None
+    if push_supabase:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from sync_to_supabase import get_client as get_sb_client
+        supabase_client = get_sb_client()
+        if supabase_client is None:
+            print("Note: Supabase not configured (SUPABASE_URL / SUPABASE_KEY missing) — saving locally only.\n")
+        else:
+            print("Supabase: connected, snapshots will be pushed automatically.\n")
+
     if source in ("timeline", "both"):
         tweets = await fetch_timeline(client, max_tweets)
-        save_snapshot(tweets, "timeline", username)
+        save_snapshot(tweets, "timeline", username, supabase_client)
 
     if source in ("mine", "both"):
         tweets = await fetch_own_tweets(client, username, max_tweets)
-        save_snapshot(tweets, "mine", username)
+        save_snapshot(tweets, "mine", username, supabase_client)
 
     print("\nDone. See data/ for the saved files.")
 
@@ -301,8 +319,13 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--no-supabase",
+        action="store_true",
+        help="Skip pushing the snapshot to Supabase (still saves JSON locally).",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, push_supabase=not args.no_supabase))
 
 
 if __name__ == "__main__":

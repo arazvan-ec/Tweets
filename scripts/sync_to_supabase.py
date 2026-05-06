@@ -24,11 +24,19 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 
-def get_client() -> Client:
+def get_client() -> Client | None:
+    """Returns a Supabase client, or None if env vars aren't configured."""
     if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
+def require_client() -> Client:
+    client = get_client()
+    if client is None:
         print("ERROR: set SUPABASE_URL and SUPABASE_KEY in .env")
         sys.exit(1)
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+    return client
 
 
 def parse_twitter_date(s: str | None) -> str | None:
@@ -159,7 +167,7 @@ def sync_snapshot(client: Client, snapshot_meta: dict, snapshot_data: dict):
 
 
 def main():
-    client = get_client()
+    client = require_client()
 
     index_file = DATA_DIR / "index.json"
     if not index_file.exists():
