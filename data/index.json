@@ -1,0 +1,16 @@
+[
+  {
+    "file": "data/2026-05-06/timeline_20260506_194221.json",
+    "fetched_at": "2026-05-06T19:42:21.884174+00:00",
+    "source": "timeline",
+    "username": "_smaily_dolgy_",
+    "count": 30
+  },
+  {
+    "file": "data/2026-05-06/mine_20260506_194223.json",
+    "fetched_at": "2026-05-06T19:42:23.171133+00:00",
+    "source": "mine",
+    "username": "_smaily_dolgy_",
+    "count": 30
+  }
+]

@@ -7,6 +7,7 @@ Saves results as JSON in data/YYYY-MM-DD/.
 import asyncio
 import json
 import os
+import re
 import sys
 import argparse
 from datetime import datetime, timezone
@@ -19,6 +20,38 @@ load_dotenv()
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 COOKIES_FILE = DATA_DIR / ".cookies.json"
+
+
+# ---------------------------------------------------------------------------
+# Patch: twikit 2.3.3's regex for finding the ondemand.s file hash is broken
+# because X changed the HTML layout. We override get_indices to use webpack's
+# chunk-id -> hash map directly.
+# ---------------------------------------------------------------------------
+
+_INDICES_REGEX = re.compile(r"""(\(\w{1}\[(\d{1,2})\],\s*16\))+""", flags=(re.VERBOSE | re.MULTILINE))
+
+
+async def _patched_get_indices(self, home_page_response, session, headers):
+    body = str(home_page_response)
+    chunk_match = re.search(r'(\d+):"ondemand\.s"', body)
+    if not chunk_match:
+        raise Exception("Couldn't locate ondemand.s chunk id in home page")
+    chunk_id = chunk_match.group(1)
+    hash_match = re.search(rf'{chunk_id}:"([a-f0-9]+)"', body)
+    if not hash_match:
+        raise Exception(f"Couldn't locate hash for chunk {chunk_id}")
+    hash_val = hash_match.group(1)
+    url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{hash_val}a.js"
+    js_resp = await session.request(method="GET", url=url, headers=headers)
+    indices = [m.group(2) for m in _INDICES_REGEX.finditer(js_resp.text)]
+    if not indices:
+        raise Exception("Couldn't extract KEY_BYTE indices from ondemand.s")
+    indices = list(map(int, indices))
+    return indices[0], indices[1:]
+
+
+from twikit.x_client_transaction.transaction import ClientTransaction
+ClientTransaction.get_indices = _patched_get_indices
 
 
 # ---------------------------------------------------------------------------
@@ -54,16 +87,16 @@ async def get_client() -> twikit.Client:
 # ---------------------------------------------------------------------------
 
 def tweet_to_dict(tweet) -> dict:
-    user = tweet.user
+    user = getattr(tweet, "user", None)
     return {
-        "id": str(tweet.id),
-        "text": tweet.text,
-        "created_at": tweet.created_at,
+        "id": str(getattr(tweet, "id", "")),
+        "text": getattr(tweet, "text", "") or getattr(tweet, "full_text", ""),
+        "created_at": getattr(tweet, "created_at", None),
         "lang": getattr(tweet, "lang", None),
         "author": {
-            "id": str(user.id),
-            "name": user.name,
-            "username": user.screen_name,
+            "id": str(getattr(user, "id", "")),
+            "name": getattr(user, "name", None),
+            "username": getattr(user, "screen_name", None),
         } if user else None,
         "metrics": {
             "likes": getattr(tweet, "favorite_count", 0) or 0,
@@ -71,11 +104,12 @@ def tweet_to_dict(tweet) -> dict:
             "replies": getattr(tweet, "reply_count", 0) or 0,
             "views": getattr(tweet, "view_count", None),
             "quotes": getattr(tweet, "quote_count", 0) or 0,
+            "bookmarks": getattr(tweet, "bookmark_count", 0) or 0,
         },
-        "is_retweet": tweet.retweeted_tweet is not None,
-        "is_reply": tweet.in_reply_to is not None,
-        "is_quote": tweet.quoted_tweet is not None,
-        "url": f"https://x.com/{user.screen_name}/status/{tweet.id}" if user else None,
+        "is_retweet": getattr(tweet, "retweeted_tweet", None) is not None,
+        "is_reply": getattr(tweet, "in_reply_to", None) is not None,
+        "is_quote": getattr(tweet, "is_quote_status", False),
+        "url": f"https://x.com/{user.screen_name}/status/{tweet.id}" if user and getattr(user, "screen_name", None) else None,
     }
 
 

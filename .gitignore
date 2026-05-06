@@ -1,4 +1,6 @@
 .env
+data/.cookies.json
+data/.session_cookies.json
 __pycache__/
 *.pyc
 .venv/
