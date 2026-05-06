@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tweets Browser</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <h1>Tweets Browser</h1>
+  <div class="header-right">
+    <span id="stats"></span>
+    <button type="button" id="refresh-btn" class="btn-primary" title="Captura nuevos tweets ahora">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M17.5 4.5h2v6h-6v-2h2.69c-.92-1.83-2.81-3-4.69-3C8.69 5.5 6 7.92 6 12s2.69 6.5 6.5 6.5c2.59 0 4.96-1.55 5.99-3.94l1.84.79C19.04 18.4 15.93 20.5 12.5 20.5 7.59 20.5 4 16.93 4 12s3.59-8.5 8.5-8.5c2.5 0 4.81 1.31 6.13 3.45L17.5 4.5z"/></svg>
+      <span id="refresh-label">Actualizar</span>
+    </button>
+  </div>
+</header>
+
+<div class="controls">
+  <label>
+    Snapshot:
+    <select id="snapshot-select"></select>
+  </label>
+  <label>
+    Fuente:
+    <select id="source-filter">
+      <option value="all">Todas</option>
+      <option value="timeline">Home timeline</option>
+      <option value="mine">Mis tweets</option>
+    </select>
+  </label>
+  <label>
+    Tipo:
+    <select id="type-filter">
+      <option value="all">Todos</option>
+      <option value="original">Solo originales</option>
+      <option value="retweet">Retweets</option>
+      <option value="reply">Respuestas</option>
+      <option value="quote">Citas</option>
+      <option value="media">Con multimedia</option>
+    </select>
+  </label>
+  <label>
+    Ordenar:
+    <select id="sort-by">
+      <option value="date_desc">Más recientes</option>
+      <option value="date_asc">Más antiguos</option>
+      <option value="likes">Más likes</option>
+      <option value="retweets">Más retweets</option>
+      <option value="replies">Más respuestas</option>
+      <option value="views">Más vistas</option>
+    </select>
+  </label>
+  <input type="search" id="search" placeholder="Buscar texto, autor...">
+</div>
+
+<main id="tweets"></main>
+
+<footer>
+  <small>Datos servidos por la API <code>/api/*</code> desde Supabase.</small>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
