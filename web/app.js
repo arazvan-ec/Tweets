@@ -50,6 +50,10 @@ let route = { kind: "home" };     // {kind:'home'} | {kind:'profile', handle: '.
 
 const ICONS = {
   reply: '<svg viewBox="0 0 24 24"><path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01z"/></svg>',
+  article: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/></svg>',
+  chevron_down: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>',
+  chevron_up: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>',
+  external: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7zM19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/></svg>',
   retweet: '<svg viewBox="0 0 24 24"><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"/></svg>',
   like: '<svg viewBox="0 0 24 24"><path d="M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C9.984 6.01 8.526 5.44 7.304 5.5c-1.243.07-2.349.78-2.91 1.91-.552 1.12-.633 2.78.479 4.82 1.074 1.97 3.257 4.27 7.129 6.61 3.87-2.34 6.052-4.64 7.126-6.61 1.111-2.04 1.03-3.7.477-4.82-.561-1.13-1.666-1.84-2.908-1.91zm4.187 7.69c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/></svg>',
   like_filled: '<svg viewBox="0 0 24 24"><path d="M20.884 13.19c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3C7.119 18.31 4.469 15.67 3.116 13.19c-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/></svg>',
@@ -508,7 +512,8 @@ function renderTweet(t) {
   const text = renderText(display);
   const media = renderMedia(display.media);
   const quote = display.quoted_tweet ? renderQuote(display.quoted_tweet) : "";
-  const card = renderUrlCard(display);
+  const article = renderArticleCard(display);
+  const card = article ? "" : renderUrlCard(display);
   const langBadge = display.lang ? `<span class="lang-badge">${escapeHtml(display.lang)}</span>` : "";
   const newPill = isNew ? `<span class="new-pill">nuevo</span>` : "";
 
@@ -533,6 +538,7 @@ function renderTweet(t) {
         <div class="tweet-text">${text}</div>
         ${media}
         ${quote}
+        ${article}
         ${card}
         <div class="tweet-actions">
           <button class="tweet-action action-reply" data-action="toggle-replies" title="Comentarios">
@@ -581,6 +587,11 @@ function renderText(t) {
     for (const m of t.media) {
       if (m.url) text = text.split(m.url).join("");
     }
+  }
+  const article = extractArticle(t);
+  if (article) {
+    if (article.short) text = text.split(article.short).join("");
+    if (article.url) text = text.split(article.url).join("");
   }
   text = text.trim();
 
@@ -676,9 +687,84 @@ function fullResImageUrl(url) {
   return url;
 }
 
+const ARTICLE_RE = /https?:\/\/(?:x\.com|twitter\.com|mobile\.twitter\.com)\/i\/article\/(\d+)/i;
+
+function extractArticle(t) {
+  if (!t) return null;
+  if (Array.isArray(t.urls)) {
+    for (const u of t.urls) {
+      const expanded = u.expanded_url || u.url || "";
+      const m = expanded.match(ARTICLE_RE);
+      if (m) {
+        return {
+          id: m[1],
+          url: expanded,
+          short: u.url || "",
+          display: u.display_url || expanded,
+        };
+      }
+    }
+  }
+  const m = (t.text || "").match(ARTICLE_RE);
+  if (m) return { id: m[1], url: m[0], short: "", display: m[0] };
+  return null;
+}
+
+function renderArticleCard(t) {
+  const article = extractArticle(t);
+  if (!article) return "";
+  const canonical = `https://x.com/i/article/${article.id}`;
+  return `
+    <div class="article-card" data-article-id="${escapeAttr(article.id)}" data-article-url="${escapeAttr(canonical)}">
+      <button type="button" class="article-card-head" data-action="toggle-article" aria-expanded="false">
+        <span class="article-card-icon">${ICONS.article}</span>
+        <span class="article-card-info">
+          <span class="article-card-label">Artículo</span>
+          <span class="article-card-url">${escapeHtml(article.display || canonical)}</span>
+        </span>
+        <span class="article-card-chevron">${ICONS.chevron_down}</span>
+      </button>
+    </div>
+  `;
+}
+
+function toggleArticleCard(card) {
+  const isOpen = card.classList.contains("is-open");
+  const head = card.querySelector(".article-card-head");
+  const chevron = card.querySelector(".article-card-chevron");
+  const url = card.getAttribute("data-article-url") || "";
+  if (isOpen) {
+    card.classList.remove("is-open");
+    card.querySelector(".article-card-body")?.remove();
+    if (head) head.setAttribute("aria-expanded", "false");
+    if (chevron) chevron.innerHTML = ICONS.chevron_down;
+    return;
+  }
+  card.classList.add("is-open");
+  if (head) head.setAttribute("aria-expanded", "true");
+  if (chevron) chevron.innerHTML = ICONS.chevron_up;
+  const body = document.createElement("div");
+  body.className = "article-card-body";
+  body.innerHTML = `
+    <div class="article-card-frame-wrap">
+      <iframe class="article-card-frame" src="${escapeAttr(url)}"
+              loading="lazy" referrerpolicy="no-referrer"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+    </div>
+    <div class="article-card-fallback">
+      <span>¿No carga? X bloquea el embebido en algunos casos.</span>
+      <a class="article-card-open" href="${escapeAttr(url)}" target="_blank" rel="noopener">
+        Abrir en X ${ICONS.external}
+      </a>
+    </div>
+  `;
+  card.appendChild(body);
+}
+
 function renderUrlCard(t) {
   if (Array.isArray(t.media) && t.media.length > 0) return "";
   if (t.quoted_tweet) return "";
+  if (extractArticle(t)) return "";
   if (!Array.isArray(t.urls) || t.urls.length === 0) return "";
   const u = t.urls.find((u) => {
     const e = u.expanded_url || "";
@@ -758,6 +844,13 @@ async function onContentClick(ev) {
       ev.preventDefault();
       markAllAsSeen();
       return;
+    case "toggle-article": {
+      const card = action.closest(".article-card");
+      if (!card) return;
+      ev.preventDefault();
+      toggleArticleCard(card);
+      return;
+    }
     case "open-media": {
       const grid = action.closest(".media-grid");
       const idx = parseInt(action.dataset.index || "0", 10);
