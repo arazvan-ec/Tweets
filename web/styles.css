@@ -797,32 +797,6 @@ main {
   vertical-align: middle;
 }
 
-.translate-link {
-  display: inline-block;
-  margin-top: 6px;
-  margin-bottom: 4px;
-  padding: 4px 10px;
-  border: 0;
-  background: transparent;
-  color: var(--accent);
-  font-size: 13px;
-  font-family: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 9999px;
-  transition: background 0.15s;
-}
-
-.translate-link:hover { background: rgba(29, 155, 240, 0.1); }
-.translate-link:disabled { opacity: 0.6; cursor: progress; }
-.translate-link.is-active { color: var(--text-muted); font-weight: 500; }
-
-.tweet-text.is-translated {
-  border-left: 2px solid var(--accent);
-  padding-left: 10px;
-  margin-left: -12px;
-}
-
 .source-badge {
   display: inline-block;
   font-size: 10px;

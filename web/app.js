@@ -38,8 +38,6 @@ const REPLIES_OPEN = new Set();
 const REPLIES_THREAD_ONLY = new Set();   // tweet ids whose replies pane is in "author only" mode
 const REPLIES_CACHE = new Map();
 const PAGE_SIZE = 25;
-const UI_LANG = (navigator.language || "es").slice(0, 2).toLowerCase();
-const TRANSLATIONS = new Map();   // tweet id -> { translated, source, target }
 
 const READ_IDS = loadReadIds();
 let _readIdsSaveTimer = null;
@@ -735,8 +733,7 @@ function renderTweet(t) {
           <button class="tweet-author-filter" data-action="filter-author" data-handle="${escapeAttr(author.username || "")}" title="Solo tweets de @${escapeAttr(author.username || "")}" aria-label="Solo tweets de @${escapeAttr(author.username || "")}">${ICONS.filter}</button>
         </div>
         ${replyingTo}
-        <div class="tweet-text" data-original="${escapeAttr(display.text || "")}">${text}</div>
-        ${renderTranslateLink(display)}
+        <div class="tweet-text">${text}</div>
         ${media}
         ${quote}
         ${article}
@@ -765,70 +762,6 @@ function renderTweet(t) {
       </div>
     </article>
   `;
-}
-
-async function toggleTranslate(tweetEl, tweetId, btn) {
-  const textEl = tweetEl.querySelector(".tweet-text");
-  if (!textEl) return;
-
-  // Toggle off — restore the original rendered HTML.
-  if (TRANSLATIONS.has(tweetId)) {
-    const orig = TRANSLATIONS.get(tweetId);
-    textEl.innerHTML = orig.originalHtml;
-    textEl.classList.remove("is-translated");
-    TRANSLATIONS.delete(tweetId);
-    btn.classList.remove("is-active");
-    btn.textContent = "Traducir";
-    return;
-  }
-
-  // Find the underlying tweet text. We stored a pristine copy on the element.
-  const original = textEl.getAttribute("data-original") || textEl.textContent;
-  if (!original.trim()) return;
-  const source = btn.dataset.source || "auto";
-
-  const originalHtml = textEl.innerHTML;
-  btn.disabled = true;
-  btn.textContent = "Traduciendo…";
-
-  try {
-    const resp = await fetch("/api/translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: original, source, target: UI_LANG }),
-    });
-    if (!resp.ok) throw new Error(await resp.text() || `HTTP ${resp.status}`);
-    const data = await resp.json();
-    const translated = (data.text || "").trim();
-    if (!translated) throw new Error("Respuesta vacía");
-
-    TRANSLATIONS.set(tweetId, { translated, originalHtml, source });
-    // Render the translated text with the same URL/mention/hashtag handling
-    // as the original so links, @user and #tag still work.
-    textEl.innerHTML = renderText({ text: translated, urls: [], media: [] });
-    textEl.classList.add("is-translated");
-    btn.classList.add("is-active");
-    btn.textContent = `Mostrar original · ${(data.source || source).toUpperCase()}`;
-  } catch (e) {
-    showToast(`No se pudo traducir: ${e.message}`, "error");
-    btn.textContent = "Traducir";
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-function renderTranslateLink(display) {
-  const lang = (display.lang || "").toLowerCase();
-  // Skip when we have no lang, when it already matches the UI, or when X tagged
-  // it `und` / `qme` (undeterminable) and the text is too short to translate.
-  if (!lang || lang === UI_LANG) return "";
-  if (["und", "qme", "qst", "qam", "qct", "art"].includes(lang)) return "";
-  if (!display.text || display.text.trim().length < 3) return "";
-  const cached = TRANSLATIONS.get(display.id);
-  if (cached) {
-    return `<button class="translate-link is-active" data-action="toggle-translate" data-source="${escapeAttr(lang)}">Mostrar original</button>`;
-  }
-  return `<button class="translate-link" data-action="toggle-translate" data-source="${escapeAttr(lang)}">Traducir</button>`;
 }
 
 function renderSourceBadge(sources) {
@@ -1298,12 +1231,6 @@ async function onContentClick(ev) {
       if (!card) return;
       ev.preventDefault();
       toggleArticleCard(card);
-      return;
-    }
-    case "toggle-translate": {
-      ev.preventDefault();
-      if (!tweetEl || !tweetId) return;
-      await toggleTranslate(tweetEl, tweetId, action);
       return;
     }
     case "open-media": {
