@@ -456,6 +456,10 @@ function applySort(tweets) {
     const n = parseInt(String(v).replace(/,/g, ""), 10);
     return isNaN(n) ? 0 : n;
   };
+  if (mode === "first_seen_desc") {
+    // Default: matches server-side ordering, no client re-sort needed.
+    return copy;
+  }
   if (mode === "date_desc") copy.sort((a, b) => parseTwitterDate(b.created_at) - parseTwitterDate(a.created_at));
   else if (mode === "date_asc") copy.sort((a, b) => parseTwitterDate(a.created_at) - parseTwitterDate(b.created_at));
   else if (mode === "likes") copy.sort((a, b) => num(b.metrics?.likes) - num(a.metrics?.likes));
