@@ -654,6 +654,69 @@ def api_og():
 
 
 # ---------------------------------------------------------------------------
+# Translate (free MyMemory backend, with an in-memory cache)
+# ---------------------------------------------------------------------------
+
+_TR_CACHE: dict[tuple[str, str, str], tuple[float, dict]] = {}
+_TR_TTL_SECONDS = 60 * 60 * 24 * 7  # 7 days
+_TR_MAX_CHARS = 800                 # tweet text is ~280, plus we trim safely
+
+
+@app.route("/api/translate", methods=["POST"])
+def api_translate():
+    body = request.get_json(silent=True) or {}
+    text = (body.get("text") or "").strip()
+    source = (body.get("source") or "auto").lower().strip()[:8] or "auto"
+    target = (body.get("target") or "es").lower().strip()[:8] or "es"
+    if not text:
+        abort(400, "text required")
+    if source == target and source != "auto":
+        return jsonify({"text": text, "source": source, "target": target, "cached": False})
+    if len(text) > _TR_MAX_CHARS:
+        text = text[:_TR_MAX_CHARS]
+
+    key = (text, source, target)
+    now = time.time()
+    cached = _TR_CACHE.get(key)
+    if cached and cached[0] > now:
+        return jsonify({**cached[1], "cached": True})
+
+    # MyMemory: anonymous endpoint, no key required, ~5k chars/day per IP.
+    # Their langpair format is "src|tgt", with "autodetect" for source.
+    src_param = "autodetect" if source == "auto" else source
+    qs = urllib.parse.urlencode({
+        "q": text,
+        "langpair": f"{src_param}|{target}",
+        "de": "tweets@app.local",  # courtesy contact for higher anon quota
+    })
+    url = f"https://api.mymemory.translated.net/get?{qs}"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "TweetsBot/1.0"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            raw = resp.read(64_000)
+        import json as _json
+        data = _json.loads(raw.decode("utf-8", errors="replace"))
+        translated = (data.get("responseData") or {}).get("translatedText") or ""
+        detected_src = (data.get("responseData") or {}).get("detectedLanguage") or source
+        if not translated:
+            abort(502, "translation backend returned empty result")
+        payload = {
+            "text": translated,
+            "source": detected_src or source,
+            "target": target,
+            "provider": "mymemory",
+        }
+    except Exception as e:
+        abort(502, f"translation failed: {e}")
+
+    _TR_CACHE[key] = (now + _TR_TTL_SECONDS, payload)
+    if len(_TR_CACHE) > 5000:
+        for k in list(_TR_CACHE.keys())[:1000]:
+            _TR_CACHE.pop(k, None)
+    return jsonify({**payload, "cached": False})
+
+
+# ---------------------------------------------------------------------------
 # Local dev entrypoint
 # ---------------------------------------------------------------------------
 
