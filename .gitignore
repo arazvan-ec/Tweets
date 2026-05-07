@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Track tweet data files (snapshots + merged)
+!data/tweets/
+!data/tweets/**
