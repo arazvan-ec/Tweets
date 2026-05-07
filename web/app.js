@@ -369,21 +369,40 @@ async function triggerRefresh(silent = false) {
   refreshBtn.classList.add("loading");
   if (!silent) refreshLabel.textContent = "Capturando…";
 
-  // Always refresh both Home feeds — same payload as the cron service.
-  // The button needs to do the same thing as opening the page for the
-  // first time: get the freshest possible snapshot of everything.
+  // Snapshot the user's "last seen" cutoff BEFORE the refresh so we can
+  // identify which tweets the refresh actually surfaces.
+  const cutoff = localStorage.getItem(LAST_SEEN_KEY) || "1970-01-01T00:00:00Z";
+
   try {
-    const resp = await fetch(`/api/refresh?source=all_feeds&max=50`, { method: "POST" });
+    // Manual refreshes go deep (max=200) so we paginate further into the
+    // algorithmic feed and surface tweets X wouldn't otherwise serve us
+    // in the top 50. The cron keeps a lighter --max for steady coverage.
+    const max = silent ? 100 : 200;
+    const resp = await fetch(`/api/refresh?source=all_feeds&max=${max}`, { method: "POST" });
     if (!resp.ok) throw new Error(await resp.text() || `HTTP ${resp.status}`);
     const data = await resp.json();
+    await refreshSnapshotList();
+    if (route.kind === "home") await loadFirstPage();
     if (!silent) {
+      const fresh = currentTweets.filter(
+        (t) => t._first_seen_at && t._first_seen_at > cutoff
+      ).length;
       const counts = (data.latest_snapshots || [])
         .map((s) => `${SOURCE_LABEL[s.source] || s.source}: ${s.count}`)
         .join(" · ");
-      showToast(`✓ Capturado ${counts || "snapshot"}`, "success");
+      const msg = fresh > 0
+        ? `✓ ${fresh} ${fresh === 1 ? "tweet nuevo" : "tweets nuevos"} (${counts})`
+        : `✓ Sin novedades — ${counts}`;
+      showToast(msg, fresh > 0 ? "success" : "");
+      // Bump the marker so the next refresh highlights only what's truly
+      // new since this click. NUEVO pills now reset on every manual refresh.
+      let latest = cutoff;
+      for (const t of currentTweets) {
+        if (t._first_seen_at && t._first_seen_at > latest) latest = t._first_seen_at;
+      }
+      localStorage.setItem(LAST_SEEN_KEY, latest);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    await refreshSnapshotList();
-    if (route.kind === "home") await loadFirstPage();
   } catch (e) {
     console.error(e);
     if (!silent) showToast(`Error: ${e.message}`, "error");
