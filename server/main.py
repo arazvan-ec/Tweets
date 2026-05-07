@@ -6,7 +6,12 @@ session cookies that the cron service uses to fetch.
 """
 
 import asyncio
+import html as _html
 import os
+import re
+import time
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory, abort
@@ -163,13 +168,23 @@ def api_tweets():
 
     bridge = (
         client.table("snapshot_tweets")
-        .select("tweet_id")
+        .select("tweet_id, snapshot_id")
         .in_("snapshot_id", target_ids)
         .execute()
     )
-    tweet_ids = list({b["tweet_id"] for b in (bridge.data or [])})
+    bridge_rows = bridge.data or []
+    tweet_ids = list({b["tweet_id"] for b in bridge_rows})
     if not tweet_ids:
         return jsonify({"tweets": [], "total": 0, "has_more": False})
+
+    # snapshot_id -> source map for attribution
+    snap_to_source = {s["id"]: s["source"] for s in snaps}
+    tweet_sources: dict[str, set[str]] = {}
+    for b in bridge_rows:
+        src = snap_to_source.get(b["snapshot_id"])
+        if not src:
+            continue
+        tweet_sources.setdefault(b["tweet_id"], set()).add(src)
 
     rows: list[dict] = []
     CHUNK = 800
@@ -192,6 +207,9 @@ def api_tweets():
         if not tid or tid in seen:
             continue
         seen.add(tid)
+        srcs = tweet_sources.get(tid)
+        if srcs:
+            t["_sources"] = sorted(srcs)
         unique.append(t)
     unique.sort(key=lambda t: t.get("created_at") or "", reverse=True)
 
@@ -457,6 +475,169 @@ def api_reply(tweet_id: str):
         pass
 
     return jsonify({"ok": True, "tweet": serialized})
+
+
+# ---------------------------------------------------------------------------
+# Link preview (OG / Twitter cards)
+# ---------------------------------------------------------------------------
+
+# In-memory TTL cache. Keyed by URL. Stores (expiry_ts, payload).
+_OG_CACHE: dict[str, tuple[float, dict]] = {}
+_OG_TTL_SECONDS = 60 * 60 * 12  # 12h
+_OG_MAX_BYTES = 200_000          # only read first 200kb of HTML
+_OG_TIMEOUT = 6                  # seconds
+
+_META_RE = re.compile(
+    r'<meta\s+[^>]*?(?:property|name)\s*=\s*["\']([^"\']+)["\'][^>]*?content\s*=\s*["\']([^"\']*)["\'][^>]*?/?>',
+    re.IGNORECASE,
+)
+_META_RE_REV = re.compile(
+    r'<meta\s+[^>]*?content\s*=\s*["\']([^"\']*)["\'][^>]*?(?:property|name)\s*=\s*["\']([^"\']+)["\'][^>]*?/?>',
+    re.IGNORECASE,
+)
+_TITLE_RE = re.compile(r'<title[^>]*>([^<]+)</title>', re.IGNORECASE | re.DOTALL)
+
+
+def _abs_url(base: str, href: str) -> str:
+    if not href:
+        return href
+    return urllib.parse.urljoin(base, href)
+
+
+def _fetch_html(url: str) -> tuple[str, str]:
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (compatible; TweetsBot/1.0; +https://tweets.app)",
+            "Accept": "text/html,application/xhtml+xml",
+            "Accept-Language": "es,en;q=0.8",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=_OG_TIMEOUT) as resp:
+        final_url = resp.geturl()
+        ctype = resp.headers.get("Content-Type", "") or ""
+        if "html" not in ctype.lower():
+            return final_url, ""
+        # Charset
+        charset = "utf-8"
+        m = re.search(r"charset=([\w\-]+)", ctype, re.IGNORECASE)
+        if m:
+            charset = m.group(1)
+        body = resp.read(_OG_MAX_BYTES)
+    try:
+        return final_url, body.decode(charset, errors="replace")
+    except LookupError:
+        return final_url, body.decode("utf-8", errors="replace")
+
+
+def _parse_meta(htmlsrc: str) -> dict:
+    metas: dict[str, str] = {}
+    for key, val in _META_RE.findall(htmlsrc):
+        metas.setdefault(key.lower(), _html.unescape(val))
+    for val, key in _META_RE_REV.findall(htmlsrc):
+        metas.setdefault(key.lower(), _html.unescape(val))
+    return metas
+
+
+def _build_preview(url: str) -> dict:
+    final_url, src = _fetch_html(url)
+    if not src:
+        return {"url": final_url or url, "kind": "link"}
+    metas = _parse_meta(src)
+    title = (
+        metas.get("og:title")
+        or metas.get("twitter:title")
+        or (_TITLE_RE.search(src).group(1).strip() if _TITLE_RE.search(src) else "")
+    )
+    description = (
+        metas.get("og:description")
+        or metas.get("twitter:description")
+        or metas.get("description")
+        or ""
+    )
+    image = (
+        metas.get("og:image")
+        or metas.get("twitter:image")
+        or metas.get("twitter:image:src")
+        or ""
+    )
+    site = metas.get("og:site_name") or ""
+    parsed = urllib.parse.urlparse(final_url or url)
+    domain = parsed.netloc.replace("www.", "")
+    return {
+        "url": final_url or url,
+        "title": (title or "").strip()[:280],
+        "description": (description or "").strip()[:400],
+        "image": _abs_url(final_url or url, image) if image else "",
+        "site": site or domain,
+        "domain": domain,
+        "kind": "link",
+    }
+
+
+def _enrich_kind(payload: dict) -> dict:
+    """Tag known-domains so the frontend can render a richer card."""
+    domain = (payload.get("domain") or "").lower()
+    parsed = urllib.parse.urlparse(payload.get("url", ""))
+    path = parsed.path or ""
+    if domain.endswith("github.com") or domain == "github.com":
+        m = re.match(r"^/([^/]+)/([^/]+)/?$", path)
+        if m:
+            payload["kind"] = "github"
+            payload["github_owner"] = m.group(1)
+            payload["github_repo"] = m.group(2)
+    elif domain.endswith("youtube.com") or domain == "youtu.be":
+        if domain == "youtu.be":
+            vid = path.strip("/").split("/")[0] or ""
+        else:
+            qs = urllib.parse.parse_qs(parsed.query or "")
+            vid = (qs.get("v") or [""])[0]
+            if not vid:
+                m = re.match(r"^/(?:shorts|embed)/([^/]+)", path)
+                if m:
+                    vid = m.group(1)
+        if vid:
+            payload["kind"] = "youtube"
+            payload["youtube_id"] = vid
+    return payload
+
+
+@app.route("/api/og")
+def api_og():
+    url = (request.args.get("url") or "").strip()
+    if not url or not (url.startswith("http://") or url.startswith("https://")):
+        abort(400, "valid http(s) url required")
+
+    # Block private/internal targets.
+    parsed = urllib.parse.urlparse(url)
+    host = (parsed.hostname or "").lower()
+    if not host or host in {"localhost"} or host.endswith(".local"):
+        abort(400, "host not allowed")
+    if host.startswith("127.") or host.startswith("10.") or host.startswith("192.168."):
+        abort(400, "host not allowed")
+
+    now = time.time()
+    cached = _OG_CACHE.get(url)
+    if cached and cached[0] > now:
+        return jsonify(cached[1])
+
+    try:
+        payload = _build_preview(url)
+    except Exception as e:
+        payload = {"url": url, "kind": "link", "error": str(e)[:200]}
+    parsed_for_kind = urllib.parse.urlparse(payload.get("url") or url)
+    payload.setdefault("domain", (parsed_for_kind.netloc or "").replace("www.", ""))
+    payload = _enrich_kind(payload)
+
+    _OG_CACHE[url] = (now + _OG_TTL_SECONDS, payload)
+    # Cap cache size
+    if len(_OG_CACHE) > 2000:
+        for k in list(_OG_CACHE.keys())[:500]:
+            _OG_CACHE.pop(k, None)
+
+    resp = jsonify(payload)
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    return resp
 
 
 # ---------------------------------------------------------------------------
