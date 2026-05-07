@@ -305,11 +305,17 @@ async function loadMore() {
     contentEl.appendChild(loader);
   }
 
+  // Merge a wider window of recent snapshots for the algorithmic feeds —
+  // the 'For You' algorithm tends to recycle content, so showing only the
+  // latest snapshot keeps the same posts pinned. With window=60 we union
+  // ~the last hour of captures and the new-tweet sort surfaces what just
+  // appeared.
   const params = new URLSearchParams({
     selection: "all_latest",
     source: currentTab,
     limit: String(PAGE_SIZE),
     offset: String(pageOffset),
+    window: currentTab === "mine" ? "1" : "60",
   });
 
   try {

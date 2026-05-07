@@ -10,6 +10,6 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "python scripts/fetch_tweets.py --source all_feeds --max 50"
+startCommand = "python scripts/fetch_tweets.py --source all_feeds --max 100"
 cronSchedule = "* * * * *"
 restartPolicyType = "NEVER"
