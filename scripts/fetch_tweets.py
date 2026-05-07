@@ -113,6 +113,97 @@ _User.__init__ = _patched_user_init
 
 
 # ---------------------------------------------------------------------------
+# Patch: twikit's get_tweet_by_id assumes specific shapes for the response
+# entries (item['content']['items'], cursor['content']['itemContent']['value'])
+# which X has been changing. Wrap the parsing in defensive .get() calls so
+# replies are still returned when the cursor metadata is missing or in a
+# new format.
+# ---------------------------------------------------------------------------
+
+from functools import partial as _partial
+from twikit.client.client import Client as _TwClient
+from twikit.utils import find_dict as _find_dict, Result as _TwResult
+from twikit.tweet import tweet_from_data as _tweet_from_data
+from twikit.errors import TweetNotAvailable as _TweetNotAvailable
+
+
+async def _patched_get_tweet_by_id(self, tweet_id: str, cursor=None):
+    response, _ = await self.gql.tweet_detail(tweet_id, cursor)
+    if 'errors' in response:
+        raise _TweetNotAvailable(response['errors'][0]['message'])
+
+    entries = (_find_dict(response, 'entries', find_one=True) or [[]])[0]
+    reply_to: list = []
+    replies_list: list = []
+    related_tweets: list = []
+    tweet = None
+
+    for entry in entries:
+        entry_id = entry.get('entryId', '')
+        if entry_id.startswith('cursor'):
+            continue
+        tweet_object = _tweet_from_data(self, entry)
+        if tweet_object is None:
+            continue
+
+        if entry_id.startswith('tweetdetailrelatedtweets'):
+            related_tweets.append(tweet_object)
+            continue
+
+        if entry_id == f'tweet-{tweet_id}':
+            tweet = tweet_object
+        else:
+            if tweet is None:
+                reply_to.append(tweet_object)
+            else:
+                replies: list = []
+                sr_cursor = None
+                show_replies = None
+
+                items = (entry.get('content') or {}).get('items') or []
+                for reply in items[1:]:
+                    rid = reply.get('entryId', '')
+                    if 'tweetcomposer' in rid:
+                        continue
+                    if 'tweet' in rid:
+                        rpl = _tweet_from_data(self, reply)
+                        if rpl is not None:
+                            replies.append(rpl)
+                    if 'cursor' in rid:
+                        sr_cursor = (((reply.get('item') or {}).get('itemContent') or {}).get('value'))
+                        if sr_cursor:
+                            show_replies = _partial(self._show_more_replies, tweet_id, sr_cursor)
+
+                tweet_object.replies = _TwResult(replies, show_replies, sr_cursor)
+                replies_list.append(tweet_object)
+
+                display_type = _find_dict(entry, 'tweetDisplayType', True)
+                if display_type and display_type[0] == 'SelfThread':
+                    tweet.thread = [tweet_object, *replies]
+
+    if tweet is None:
+        raise _TweetNotAvailable(f"tweet {tweet_id} not in response entries")
+
+    reply_next_cursor = None
+    _fetch_more_replies = None
+    if entries and entries[-1].get('entryId', '').startswith('cursor'):
+        last_content = entries[-1].get('content') or {}
+        # X has used both shapes: content.itemContent.value and content.value
+        item_content = last_content.get('itemContent') or {}
+        reply_next_cursor = item_content.get('value') or last_content.get('value')
+        if reply_next_cursor:
+            _fetch_more_replies = _partial(self._get_more_replies, tweet_id, reply_next_cursor)
+
+    tweet.replies = _TwResult(replies_list, _fetch_more_replies, reply_next_cursor)
+    tweet.reply_to = reply_to
+    tweet.related_tweets = related_tweets
+    return tweet
+
+
+_TwClient.get_tweet_by_id = _patched_get_tweet_by_id
+
+
+# ---------------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------------
 

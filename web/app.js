@@ -37,7 +37,6 @@ const READ_IDS_CAP = 2000;
 const REPLIES_OPEN = new Set();
 const REPLIES_THREAD_ONLY = new Set();   // tweet ids whose replies pane is in "author only" mode
 const REPLIES_CACHE = new Map();
-const COMPOSE_OPEN = new Set();
 const PAGE_SIZE = 25;
 
 const READ_IDS = loadReadIds();
@@ -438,11 +437,17 @@ async function loadMore() {
     contentEl.appendChild(loader);
   }
 
+  // Merge a wider window of recent snapshots for the algorithmic feeds —
+  // the 'For You' algorithm tends to recycle content, so showing only the
+  // latest snapshot keeps the same posts pinned. With window=60 we union
+  // ~the last hour of captures and the new-tweet sort surfaces what just
+  // appeared.
   const params = new URLSearchParams({
     selection: "all_latest",
     source: currentTab,
     limit: String(PAGE_SIZE),
     offset: String(pageOffset),
+    window: currentTab === "mine" ? "1" : "60",
   });
 
   try {
@@ -492,21 +497,40 @@ async function triggerRefresh(silent = false) {
   refreshBtn.classList.add("loading");
   if (!silent) refreshLabel.textContent = "Capturando…";
 
-  // Always refresh both Home feeds — same payload as the cron service.
-  // The button needs to do the same thing as opening the page for the
-  // first time: get the freshest possible snapshot of everything.
+  // Snapshot the user's "last seen" cutoff BEFORE the refresh so we can
+  // identify which tweets the refresh actually surfaces.
+  const cutoff = localStorage.getItem(LAST_SEEN_KEY) || "1970-01-01T00:00:00Z";
+
   try {
-    const resp = await fetch(`/api/refresh?source=all_feeds&max=50`, { method: "POST" });
+    // Manual refreshes go deep (max=200) so we paginate further into the
+    // algorithmic feed and surface tweets X wouldn't otherwise serve us
+    // in the top 50. The cron keeps a lighter --max for steady coverage.
+    const max = silent ? 100 : 200;
+    const resp = await fetch(`/api/refresh?source=all_feeds&max=${max}`, { method: "POST" });
     if (!resp.ok) throw new Error(await resp.text() || `HTTP ${resp.status}`);
     const data = await resp.json();
+    await refreshSnapshotList();
+    if (route.kind === "home") await loadFirstPage();
     if (!silent) {
+      const fresh = currentTweets.filter(
+        (t) => t._first_seen_at && t._first_seen_at > cutoff
+      ).length;
       const counts = (data.latest_snapshots || [])
         .map((s) => `${SOURCE_LABEL[s.source] || s.source}: ${s.count}`)
         .join(" · ");
-      showToast(`✓ Capturado ${counts || "snapshot"}`, "success");
+      const msg = fresh > 0
+        ? `✓ ${fresh} ${fresh === 1 ? "tweet nuevo" : "tweets nuevos"} (${counts})`
+        : `✓ Sin novedades — ${counts}`;
+      showToast(msg, fresh > 0 ? "success" : "");
+      // Bump the marker so the next refresh highlights only what's truly
+      // new since this click. NUEVO pills now reset on every manual refresh.
+      let latest = cutoff;
+      for (const t of currentTweets) {
+        if (t._first_seen_at && t._first_seen_at > latest) latest = t._first_seen_at;
+      }
+      localStorage.setItem(LAST_SEEN_KEY, latest);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    await refreshSnapshotList();
-    if (route.kind === "home") await loadFirstPage();
   } catch (e) {
     console.error(e);
     if (!silent) showToast(`Error: ${e.message}`, "error");
@@ -622,6 +646,10 @@ function applySort(tweets) {
     const n = parseInt(String(v).replace(/,/g, ""), 10);
     return isNaN(n) ? 0 : n;
   };
+  if (mode === "first_seen_desc") {
+    // Default: matches server-side ordering, no client re-sort needed.
+    return copy;
+  }
   if (mode === "date_desc") copy.sort((a, b) => parseTwitterDate(b.created_at) - parseTwitterDate(a.created_at));
   else if (mode === "date_asc") copy.sort((a, b) => parseTwitterDate(a.created_at) - parseTwitterDate(b.created_at));
   else if (mode === "likes") copy.sort((a, b) => num(b.metrics?.likes) - num(a.metrics?.likes));
@@ -711,7 +739,7 @@ function renderTweet(t) {
         ${article}
         ${card}
         <div class="tweet-actions">
-          <button class="tweet-action action-reply" data-action="toggle-compose" title="Responder · ${escapeAttr(formatExact(m.replies))}">
+          <button class="tweet-action action-reply" data-action="toggle-replies" title="Comentarios · ${escapeAttr(formatExact(m.replies))}">
             ${ICONS.reply}<span>${formatNum(m.replies)}</span>
           </button>
           <button class="tweet-action action-retweet ${vs.retweeted ? "is-active" : ""}" data-action="toggle-retweet" title="Retweet · ${escapeAttr(formatExact(m.retweets))}">
@@ -725,9 +753,6 @@ function renderTweet(t) {
           </button>
           <button class="tweet-action action-views" title="Vistas · ${escapeAttr(formatExact(m.views))}">
             ${ICONS.views}<span>${formatNum(m.views)}</span>
-          </button>
-          <button class="tweet-action" data-action="toggle-replies" title="Ver respuestas">
-            💬
           </button>
           <button class="tweet-action action-thread" data-action="toggle-thread" title="Ver hilo del autor">
             🧵
@@ -1185,16 +1210,6 @@ async function onContentClick(ev) {
       await renderRepliesInto(tweetEl, tweetId, false);
       return;
     }
-    case "toggle-compose":
-      if (!tweetId) return;
-      if (COMPOSE_OPEN.has(tweetId)) {
-        COMPOSE_OPEN.delete(tweetId);
-        tweetEl.querySelector(".reply-compose")?.remove();
-      } else {
-        COMPOSE_OPEN.add(tweetId);
-        renderComposeInto(tweetEl, tweetId);
-      }
-      return;
     case "submit-reply":
       await submitReply(tweetEl, tweetId);
       return;
@@ -1244,7 +1259,11 @@ async function renderRepliesInto(tweetEl, tweetId, refresh) {
     container.className = "replies-thread";
     tweetEl.querySelector(".tweet-body").appendChild(container);
   }
-  container.innerHTML = `<div class="replies-loading">Cargando comentarios…</div>`;
+
+  // Compose form at the top + loading skeleton below.
+  container.innerHTML = composeFormHtml() +
+    `<div class="replies-loading">Cargando comentarios…</div>`;
+  attachComposeHandlers(container, tweetId);
 
   let data;
   try {
@@ -1258,42 +1277,61 @@ async function renderRepliesInto(tweetEl, tweetId, refresh) {
       REPLIES_CACHE.set(tweetId, data.replies || []);
     }
   } catch (e) {
-    container.innerHTML = `<div class="replies-empty">Error: ${escapeHtml(e.message)}</div>`;
+    const loader = container.querySelector(".replies-loading");
+    if (loader) loader.outerHTML = `<div class="replies-empty">Error: ${escapeHtml(e.message)}</div>`;
     return;
   }
 
-  let replies = data.replies || [];
-  // Identify the original tweet's author handle to support author-only mode.
-  const tweetEl0 = tweetEl;
+  const replies = data.replies || [];
+
+  // Author-only filter: identify the original tweet's author handle so we can
+  // narrow the replies down to a single-author thread (🧵 button / toggle).
   const tweetData = currentTweets.find((t) => (t.id === tweetId) || (t.retweeted_tweet && t.retweeted_tweet.id === tweetId));
   const original = tweetData?.is_retweet ? tweetData.retweeted_tweet : tweetData;
   const authorHandle = (original?.author?.username || "").toLowerCase();
   const onlyAuthor = REPLIES_THREAD_ONLY.has(tweetId);
-  let visible = replies;
-  if (onlyAuthor && authorHandle) {
-    visible = replies.filter((r) => (r.author?.username || "").toLowerCase() === authorHandle);
-  }
+  const visible = (onlyAuthor && authorHandle)
+    ? replies.filter((r) => (r.author?.username || "").toLowerCase() === authorHandle)
+    : replies;
 
   const toggle = authorHandle
     ? `<button class="btn-link ${onlyAuthor ? "is-active" : ""}" data-action="toggle-author-only">${onlyAuthor ? "✓ Solo autor" : "Solo autor"}</button>`
     : "";
 
-  if (visible.length === 0) {
-    container.innerHTML = `
-      <div class="replies-empty">${onlyAuthor ? "El autor no continuó el hilo" : "Sin comentarios"}</div>
-      <div class="replies-actions">
-        ${toggle}
-        <button class="btn-link" data-action="refresh-replies">Buscar comentarios en X</button>
-      </div>`;
-    return;
-  }
+  const repliesHtml = visible.length === 0
+    ? `<div class="replies-empty">${onlyAuthor ? "El autor no continuó el hilo" : "Aún no hay comentarios"}</div>`
+    : visible.map(renderReply).join("");
 
-  container.innerHTML = visible.map(renderReply).join("") +
+  container.innerHTML = composeFormHtml() +
+    repliesHtml +
     `<div class="replies-actions">
        ${toggle}
        <button class="btn-link" data-action="refresh-replies">${data.from_cache ? "Recargar desde X" : "Refrescado"}</button>
      </div>`;
+  attachComposeHandlers(container, tweetId);
   observeOgCards(container);
+}
+
+function composeFormHtml() {
+  return `
+    <div class="reply-compose">
+      <textarea placeholder="Escribe tu respuesta..." maxlength="280"></textarea>
+      <div class="reply-compose-bar">
+        <span class="reply-counter">0 / 280</span>
+        <button class="btn-primary" data-action="submit-reply">Responder</button>
+      </div>
+    </div>`;
+}
+
+function attachComposeHandlers(container, tweetId) {
+  const ta = container.querySelector(".reply-compose textarea");
+  const counter = container.querySelector(".reply-compose .reply-counter");
+  if (!ta || !counter) return;
+  ta.addEventListener("input", () => {
+    const n = ta.value.length;
+    counter.textContent = `${n} / 280`;
+    counter.classList.toggle("over", n > 280);
+  });
 }
 
 function renderReply(t) {
@@ -1322,35 +1360,14 @@ function renderReply(t) {
 }
 
 // ---------------------------------------------------------------------------
-// Compose
+// Reply submission
 // ---------------------------------------------------------------------------
 
-function renderComposeInto(tweetEl, tweetId) {
-  const wrap = document.createElement("div");
-  wrap.className = "reply-compose";
-  wrap.innerHTML = `
-    <textarea placeholder="Escribe tu respuesta..." maxlength="280"></textarea>
-    <div class="reply-compose-bar">
-      <span class="reply-counter">0 / 280</span>
-      <button class="btn-primary" data-action="submit-reply">Responder</button>
-    </div>
-  `;
-  tweetEl.querySelector(".tweet-body").appendChild(wrap);
-  const ta = wrap.querySelector("textarea");
-  const counter = wrap.querySelector(".reply-counter");
-  ta.focus();
-  ta.addEventListener("input", () => {
-    const n = ta.value.length;
-    counter.textContent = `${n} / 280`;
-    counter.classList.toggle("over", n > 280);
-  });
-}
-
 async function submitReply(tweetEl, tweetId) {
-  const wrap = tweetEl.querySelector(".reply-compose");
-  if (!wrap) return;
-  const ta = wrap.querySelector("textarea");
-  const btn = wrap.querySelector(".btn-primary");
+  const compose = tweetEl.querySelector(".replies-thread .reply-compose");
+  if (!compose) return;
+  const ta = compose.querySelector("textarea");
+  const btn = compose.querySelector(".btn-primary");
   const text = ta.value.trim();
   if (!text) {
     showToast("Escribe algo primero", "error");
@@ -1366,14 +1383,14 @@ async function submitReply(tweetEl, tweetId) {
     });
     if (!resp.ok) throw new Error(await resp.text() || `HTTP ${resp.status}`);
     showToast("✓ Respuesta enviada", "success");
-    COMPOSE_OPEN.delete(tweetId);
-    wrap.remove();
     // Bump reply count in UI
-    const replyAction = tweetEl.querySelector('.action-reply span');
+    const replyAction = tweetEl.querySelector(".action-reply span");
     if (replyAction) {
       const prev = parseInt(replyAction.textContent) || 0;
       replyAction.textContent = formatNum(prev + 1);
     }
+    // Re-fetch the conversation so the new reply appears immediately.
+    await renderRepliesInto(tweetEl, tweetId, /*refresh=*/true);
   } catch (e) {
     showToast(`Error: ${e.message}`, "error");
     btn.disabled = false;

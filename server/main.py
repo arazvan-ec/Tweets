@@ -134,6 +134,12 @@ def api_tweets():
         offset = int(request.args.get("offset", "0"))
     except ValueError:
         offset = 0
+    try:
+        # How many recent snapshots PER SOURCE to merge when selection=all_latest.
+        # Default 1 = exactly the latest snapshot per source (legacy behaviour).
+        window = max(1, int(request.args.get("window", "1")))
+    except ValueError:
+        window = 1
 
     client = sb()
 
@@ -152,11 +158,12 @@ def api_tweets():
         except ValueError:
             abort(400, "id must be an integer")
     elif selection == "all_latest":
-        seen = set()
+        per_src: dict[str, int] = {}
         target_ids = []
         for s in snaps:
-            if s["source"] not in seen:
-                seen.add(s["source"])
+            n = per_src.get(s["source"], 0)
+            if n < window:
+                per_src[s["source"]] = n + 1
                 target_ids.append(s["id"])
     elif selection == "all":
         target_ids = [s["id"] for s in snaps]
@@ -211,7 +218,13 @@ def api_tweets():
         if srcs:
             t["_sources"] = sorted(srcs)
         unique.append(t)
-    unique.sort(key=lambda t: t.get("created_at") or "", reverse=True)
+    # Sort by capture time (newest captures first) so freshly-seen tweets
+    # bubble up. Ties broken by the tweet's own creation date so two tweets
+    # captured in the same snapshot keep a stable order.
+    unique.sort(
+        key=lambda t: (t.get("_first_seen_at") or "", t.get("created_at") or ""),
+        reverse=True,
+    )
 
     total = len(unique)
     page = unique[offset:offset + limit]
