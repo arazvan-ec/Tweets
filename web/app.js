@@ -31,9 +31,117 @@ const sentinelEl = $("#scroll-sentinel");
 // ---------------------------------------------------------------------------
 
 const LAST_SEEN_KEY = "tweets:last_seen_at";
+const READ_IDS_KEY = "tweets:read_ids";
+const TAB_LAST_SEEN_KEY = "tweets:last_seen_at:by_tab";
+const READ_IDS_CAP = 2000;
 const REPLIES_OPEN = new Set();
+const REPLIES_THREAD_ONLY = new Set();   // tweet ids whose replies pane is in "author only" mode
 const REPLIES_CACHE = new Map();
 const PAGE_SIZE = 25;
+
+const READ_IDS = loadReadIds();
+let _readIdsSaveTimer = null;
+
+function loadReadIds() {
+  try {
+    const raw = localStorage.getItem(READ_IDS_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw));
+  } catch (_) {
+    return new Set();
+  }
+}
+
+function persistReadIds() {
+  clearTimeout(_readIdsSaveTimer);
+  _readIdsSaveTimer = setTimeout(() => {
+    try {
+      // Cap size — drop oldest insertions (Set preserves insertion order).
+      let arr = Array.from(READ_IDS);
+      if (arr.length > READ_IDS_CAP) {
+        arr = arr.slice(arr.length - READ_IDS_CAP);
+        READ_IDS.clear();
+        for (const id of arr) READ_IDS.add(id);
+      }
+      localStorage.setItem(READ_IDS_KEY, JSON.stringify(arr));
+    } catch (_) {}
+  }, 250);
+}
+
+// Cache of unread counts per tab for badges. Refreshed on tab change + on
+// first mount via fetchOtherTabBadges.
+const TAB_UNREAD = { for_you: 0, following: 0, mine: 0 };
+
+function setTabBadge(tab, count) {
+  TAB_UNREAD[tab] = count;
+  const link = tabsEl?.querySelector?.(`[data-tab="${tab}"]`);
+  if (!link) return;
+  let badge = link.querySelector(".tab-badge");
+  if (count > 0) {
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "tab-badge";
+      link.appendChild(badge);
+    }
+    badge.textContent = count > 99 ? "99+" : String(count);
+  } else if (badge) {
+    badge.remove();
+  }
+}
+
+function countUnread(tweets, tab) {
+  const tabSeen = loadTabLastSeen();
+  const lastSeen = tabSeen[tab] || "1970-01-01T00:00:00Z";
+  let unread = 0;
+  for (const t of tweets) {
+    const fs = t._first_seen_at;
+    if (fs && fs > lastSeen) unread++;
+  }
+  return unread;
+}
+
+function updateTabBadges(currentList) {
+  if (route.kind !== "home") return;
+  // Update active tab from current rendered list
+  setTabBadge(currentTab, countUnread(currentList || currentTweets, currentTab));
+  // And mark active tab as seen so next visit doesn't keep showing the count
+  const tabSeen = loadTabLastSeen();
+  let latest = tabSeen[currentTab] || "";
+  for (const t of (currentList || currentTweets)) {
+    if (t._first_seen_at && t._first_seen_at > latest) latest = t._first_seen_at;
+  }
+  if (latest && latest !== tabSeen[currentTab]) {
+    tabSeen[currentTab] = latest;
+    saveTabLastSeen(tabSeen);
+    // Clear badge after a beat — user has seen them now.
+    setTimeout(() => setTabBadge(currentTab, 0), 1500);
+  }
+}
+
+async function fetchOtherTabBadges() {
+  const others = ["for_you", "following", "mine"].filter((t) => t !== currentTab);
+  for (const tab of others) {
+    try {
+      const r = await fetch(`/api/tweets?selection=all_latest&source=${tab}&limit=25&offset=0`, { cache: "no-store" });
+      if (!r.ok) continue;
+      const data = await r.json();
+      const tweets = data.tweets || [];
+      setTabBadge(tab, countUnread(tweets, tab));
+    } catch (_) { /* ignore */ }
+  }
+}
+
+function loadTabLastSeen() {
+  try {
+    return JSON.parse(localStorage.getItem(TAB_LAST_SEEN_KEY) || "{}") || {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveTabLastSeen(map) {
+  try { localStorage.setItem(TAB_LAST_SEEN_KEY, JSON.stringify(map)); } catch (_) {}
+}
 
 let snapshots = [];
 let currentTab = "for_you";       // for_you | following | mine | profile
@@ -58,6 +166,7 @@ const ICONS = {
   like: '<svg viewBox="0 0 24 24"><path d="M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C9.984 6.01 8.526 5.44 7.304 5.5c-1.243.07-2.349.78-2.91 1.91-.552 1.12-.633 2.78.479 4.82 1.074 1.97 3.257 4.27 7.129 6.61 3.87-2.34 6.052-4.64 7.126-6.61 1.111-2.04 1.03-3.7.477-4.82-.561-1.13-1.666-1.84-2.908-1.91zm4.187 7.69c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/></svg>',
   like_filled: '<svg viewBox="0 0 24 24"><path d="M20.884 13.19c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3C7.119 18.31 4.469 15.67 3.116 13.19c-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/></svg>',
   views: '<svg viewBox="0 0 24 24"><path d="M8.75 21V3h2v18h-2zM18 21V8.5h2V21h-2zM4 21l.004-10h2L6 21H4zm9.248 0v-7h2v7h-2z"/></svg>',
+  filter: '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M3 5h18v2l-7 8v5l-4-2v-3L3 7V5z"/></svg>',
   bookmark: '<svg viewBox="0 0 24 24"><path d="M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5zM6.5 4c-.276 0-.5.22-.5.5v14.56l6-4.29 6 4.29V4.5c0-.28-.224-.5-.5-.5h-11z"/></svg>',
   bookmark_filled: '<svg viewBox="0 0 24 24"><path d="M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5z"/></svg>',
   verified_blue: '<svg viewBox="0 0 22 22" class="verified-icon blue"><g><path d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.687.878.633.132 1.29.084 1.897-.136.274.586.705 1.084 1.246 1.439.54.354 1.17.551 1.816.569.647-.016 1.276-.213 1.817-.567s.972-.854 1.245-1.44c.604.239 1.266.296 1.903.164.636-.132 1.22-.447 1.68-.907.46-.46.776-1.044.908-1.681s.075-1.299-.165-1.903c.586-.274 1.084-.705 1.439-1.246.354-.54.551-1.17.569-1.816zM9.662 14.85l-3.429-3.428 1.293-1.302 2.072 2.072 4.4-4.794 1.347 1.246z"/></g></svg>',
@@ -213,6 +322,9 @@ async function init() {
   // Lightbox / media viewer
   setupLightbox();
 
+  // Long-press on tweet date / metrics to show absolute / exact info on mobile
+  setupLongPressTooltips();
+
   await refreshSnapshotList();
   handleRoute();
 
@@ -250,6 +362,20 @@ function handleRoute() {
 function navigateProfile(handle) {
   if (!handle) return;
   location.hash = `#u/${handle}`;
+}
+
+function applyAuthorFilter(handle) {
+  if (!handle) return;
+  searchInput.value = `@${handle}`;
+  if (route.kind !== "home") {
+    location.hash = `#${currentTab}`;
+    // render() runs after route handler picks up the change
+    setTimeout(() => render(), 0);
+  } else {
+    render();
+  }
+  showToast(`Filtrando por @${handle}`, "info");
+  searchInput.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 // ---------------------------------------------------------------------------
@@ -295,6 +421,8 @@ async function loadFirstPage() {
   currentTweets = [];
   contentEl.innerHTML = '<div class="spinner">Cargando…</div>';
   await loadMore();
+  // Don't await — runs in background, just refreshes the other tabs' badges.
+  fetchOtherTabBadges();
 }
 
 async function loadMore() {
@@ -417,6 +545,39 @@ async function triggerRefresh(silent = false) {
 // Pull to refresh
 // ---------------------------------------------------------------------------
 
+// Long-press anywhere on `[title]` elements inside the feed to show the title
+// as a transient toast — gives mobile users access to absolute dates / exact
+// counts that desktop gets via hover.
+function setupLongPressTooltips() {
+  let timer = null;
+  let target = null;
+  const start = (ev) => {
+    const el = ev.target.closest("[title]");
+    if (!el) return;
+    const text = el.getAttribute("title");
+    if (!text) return;
+    target = el;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      ev.preventDefault?.();
+      showToast(text, "info");
+      // Suppress the upcoming click so we don't open the link.
+      const block = (e) => { e.preventDefault(); e.stopPropagation(); el.removeEventListener("click", block, true); };
+      el.addEventListener("click", block, true);
+      setTimeout(() => el.removeEventListener("click", block, true), 800);
+    }, 500);
+  };
+  const cancel = () => {
+    clearTimeout(timer);
+    timer = null;
+    target = null;
+  };
+  document.addEventListener("touchstart", start, { passive: true });
+  document.addEventListener("touchend", cancel, { passive: true });
+  document.addEventListener("touchmove", cancel, { passive: true });
+  document.addEventListener("touchcancel", cancel, { passive: true });
+}
+
 function setupPullToRefresh() {
   let startY = null;
   let pulling = false;
@@ -508,6 +669,9 @@ function render() {
   }
 
   contentEl.innerHTML = filtered.map(renderTweet).join("");
+  observeOgCards();
+  observeReadTweets();
+  updateTabBadges(filtered);
 }
 
 // ---------------------------------------------------------------------------
@@ -545,13 +709,16 @@ function renderTweet(t) {
   const card = article ? "" : renderUrlCard(display);
   const langBadge = display.lang ? `<span class="lang-badge">${escapeHtml(display.lang)}</span>` : "";
   const newPill = isNew ? `<span class="new-pill">nuevo</span>` : "";
+  const sourceBadge = renderSourceBadge(t._sources);
 
   const avatar = author.avatar
     ? `<img src="${escapeAttr(upgradeAvatar(author.avatar))}" alt="" loading="lazy">`
     : `<div style="width:100%;height:100%;background:#2f3336;"></div>`;
 
+  const isRead = READ_IDS.has(display.id);
+
   return `
-    <article class="tweet ${isNew ? "is-new" : ""}" data-tweet-id="${escapeAttr(display.id)}">
+    <article class="tweet ${isNew ? "is-new" : ""} ${isRead ? "is-read" : ""}" data-tweet-id="${escapeAttr(display.id)}">
       <div class="tweet-avatar" data-action="profile" data-handle="${escapeAttr(author.username || "")}">${avatar}</div>
       <div class="tweet-body">
         ${header}
@@ -562,6 +729,8 @@ function renderTweet(t) {
           <a class="tweet-date" href="${escapeAttr(display.url || "#")}" target="_blank" rel="noopener" title="${escapeAttr(formatFullDate(display.created_at))}">${escapeHtml(formatRelative(display.created_at))}</a>
           ${langBadge}
           ${newPill}
+          ${sourceBadge}
+          <button class="tweet-author-filter" data-action="filter-author" data-handle="${escapeAttr(author.username || "")}" title="Solo tweets de @${escapeAttr(author.username || "")}" aria-label="Solo tweets de @${escapeAttr(author.username || "")}">${ICONS.filter}</button>
         </div>
         ${replyingTo}
         <div class="tweet-text">${text}</div>
@@ -570,25 +739,36 @@ function renderTweet(t) {
         ${article}
         ${card}
         <div class="tweet-actions">
-          <button class="tweet-action action-reply" data-action="toggle-replies" title="Comentarios">
+          <button class="tweet-action action-reply" data-action="toggle-replies" title="Comentarios · ${escapeAttr(formatExact(m.replies))}">
             ${ICONS.reply}<span>${formatNum(m.replies)}</span>
           </button>
-          <button class="tweet-action action-retweet ${vs.retweeted ? "is-active" : ""}" data-action="toggle-retweet" title="Retweet">
+          <button class="tweet-action action-retweet ${vs.retweeted ? "is-active" : ""}" data-action="toggle-retweet" title="Retweet · ${escapeAttr(formatExact(m.retweets))}">
             ${ICONS.retweet}<span>${formatNum(m.retweets)}</span>
           </button>
-          <button class="tweet-action action-like ${vs.liked ? "is-active" : ""}" data-action="toggle-like" title="Like">
+          <button class="tweet-action action-like ${vs.liked ? "is-active" : ""}" data-action="toggle-like" title="Like · ${escapeAttr(formatExact(m.likes))}">
             ${vs.liked ? ICONS.like_filled : ICONS.like}<span>${formatNum(m.likes)}</span>
           </button>
-          <button class="tweet-action action-bookmark ${vs.bookmarked ? "is-active" : ""}" data-action="toggle-bookmark" title="Bookmark">
+          <button class="tweet-action action-bookmark ${vs.bookmarked ? "is-active" : ""}" data-action="toggle-bookmark" title="Bookmark · ${escapeAttr(formatExact(m.bookmarks))}">
             ${vs.bookmarked ? ICONS.bookmark_filled : ICONS.bookmark}<span>${formatNum(m.bookmarks)}</span>
           </button>
-          <button class="tweet-action action-views" title="Vistas">
+          <button class="tweet-action action-views" title="Vistas · ${escapeAttr(formatExact(m.views))}">
             ${ICONS.views}<span>${formatNum(m.views)}</span>
           </button>
+          <button class="tweet-action action-thread" data-action="toggle-thread" title="Ver hilo del autor">
+            🧵
+          </button>
         </div>
+        ${renderEngagement(m)}
       </div>
     </article>
   `;
+}
+
+function renderSourceBadge(sources) {
+  if (!Array.isArray(sources) || sources.length < 2) return "";
+  // Tweet appears in more than one feed — informative for "viralidad cross-feed"
+  const labels = sources.map((s) => SOURCE_LABEL[s] || s).join(" + ");
+  return `<span class="source-badge" title="${escapeAttr(labels)}">${escapeHtml(labels)}</span>`;
 }
 
 function renderQuote(q) {
@@ -802,10 +982,153 @@ function renderUrlCard(t) {
   if (!u) return "";
   const display = u.display_url || u.expanded_url || u.url;
   const href = u.expanded_url || u.url;
+  // Skeleton — OG metadata fills in via IntersectionObserver after render.
   return `
-    <a class="url-card" href="${escapeAttr(href)}" target="_blank" rel="noopener">
-      <div class="url-card-link">${escapeHtml(display)}</div>
+    <a class="url-card url-card-skel" href="${escapeAttr(href)}" target="_blank" rel="noopener" data-og-url="${escapeAttr(href)}">
+      <div class="url-card-body">
+        <div class="url-card-link">${escapeHtml(display)}</div>
+      </div>
     </a>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Link previews (Open Graph). Lazy-fetched per card via /api/og.
+// ---------------------------------------------------------------------------
+
+const OG_CACHE = new Map();          // url -> payload
+const OG_INFLIGHT = new Map();       // url -> Promise
+let _ogObserver = null;
+
+function getOgObserver() {
+  if (_ogObserver) return _ogObserver;
+  _ogObserver = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      const card = e.target;
+      _ogObserver.unobserve(card);
+      hydrateOgCard(card);
+    }
+  }, { rootMargin: "200px" });
+  return _ogObserver;
+}
+
+// ---------------------------------------------------------------------------
+// Read-tracking observer — marks a tweet as "read" after a short dwell in view
+// ---------------------------------------------------------------------------
+
+let _readObserver = null;
+const _readDwell = new WeakMap(); // article element -> timeout id
+
+function getReadObserver() {
+  if (_readObserver) return _readObserver;
+  _readObserver = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      const el = e.target;
+      const id = el.getAttribute("data-tweet-id");
+      if (!id) continue;
+      if (e.isIntersecting && e.intersectionRatio > 0.6) {
+        if (READ_IDS.has(id)) continue;
+        if (_readDwell.has(el)) continue;
+        const t = setTimeout(() => {
+          READ_IDS.add(id);
+          el.classList.add("is-read");
+          persistReadIds();
+          _readObserver.unobserve(el);
+          _readDwell.delete(el);
+        }, 1200);
+        _readDwell.set(el, t);
+      } else {
+        const t = _readDwell.get(el);
+        if (t) {
+          clearTimeout(t);
+          _readDwell.delete(el);
+        }
+      }
+    }
+  }, { threshold: [0, 0.6, 1] });
+  return _readObserver;
+}
+
+function observeReadTweets(root) {
+  const obs = getReadObserver();
+  const tweets = (root || contentEl).querySelectorAll("article.tweet[data-tweet-id]");
+  tweets.forEach((el) => {
+    if (READ_IDS.has(el.getAttribute("data-tweet-id"))) return;
+    obs.observe(el);
+  });
+}
+
+function observeOgCards(root) {
+  const obs = getOgObserver();
+  const cards = (root || contentEl).querySelectorAll(".url-card[data-og-url]");
+  cards.forEach((c) => {
+    if (c.dataset.ogHydrated) return;
+    obs.observe(c);
+  });
+}
+
+async function hydrateOgCard(card) {
+  const url = card.getAttribute("data-og-url");
+  if (!url || card.dataset.ogHydrated) return;
+  card.dataset.ogHydrated = "1";
+  let data;
+  if (OG_CACHE.has(url)) {
+    data = OG_CACHE.get(url);
+  } else if (OG_INFLIGHT.has(url)) {
+    data = await OG_INFLIGHT.get(url);
+  } else {
+    const p = fetch(`/api/og?url=${encodeURIComponent(url)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    OG_INFLIGHT.set(url, p);
+    data = await p;
+    OG_INFLIGHT.delete(url);
+    if (data) OG_CACHE.set(url, data);
+  }
+  if (!data || (!data.title && !data.image && data.kind === "link")) {
+    card.classList.remove("url-card-skel");
+    return;
+  }
+  card.classList.remove("url-card-skel");
+  card.classList.add(`url-card-${data.kind || "link"}`);
+  card.innerHTML = renderOgCardInner(data);
+}
+
+function renderOgCardInner(d) {
+  if (d.kind === "youtube" && d.youtube_id) {
+    const thumb = d.image || `https://i.ytimg.com/vi/${d.youtube_id}/hqdefault.jpg`;
+    return `
+      <div class="url-card-image yt-thumb">
+        <img src="${escapeAttr(thumb)}" alt="" loading="lazy">
+        <span class="yt-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+      </div>
+      <div class="url-card-body">
+        <div class="url-card-domain">▶ YouTube · ${escapeHtml(d.domain || "")}</div>
+        <div class="url-card-title">${escapeHtml(d.title || "")}</div>
+        ${d.description ? `<div class="url-card-desc">${escapeHtml(d.description)}</div>` : ""}
+      </div>
+    `;
+  }
+  if (d.kind === "github" && d.github_owner) {
+    return `
+      <div class="url-card-body url-card-gh">
+        <div class="url-card-domain">⌨ github.com</div>
+        <div class="url-card-title">${escapeHtml(d.github_owner)}/${escapeHtml(d.github_repo || "")}</div>
+        ${d.description ? `<div class="url-card-desc">${escapeHtml(d.description)}</div>` : ""}
+      </div>
+    `;
+  }
+  const img = d.image
+    ? `<div class="url-card-image"><img src="${escapeAttr(d.image)}" alt="" loading="lazy"></div>`
+    : "";
+  return `
+    ${img}
+    <div class="url-card-body">
+      <div class="url-card-domain">${escapeHtml(d.domain || "")}</div>
+      ${d.title ? `<div class="url-card-title">${escapeHtml(d.title)}</div>` : ""}
+      ${d.description ? `<div class="url-card-desc">${escapeHtml(d.description)}</div>` : ""}
+    </div>
   `;
 }
 
@@ -841,7 +1164,17 @@ async function onContentClick(ev) {
   switch (action.dataset.action) {
     case "profile":
       ev.preventDefault();
+      // Alt/Option-click filters the feed by this author instead of opening profile.
+      if (ev.altKey && action.dataset.handle) {
+        applyAuthorFilter(action.dataset.handle);
+        return;
+      }
       navigateProfile(action.dataset.handle);
+      return;
+    case "filter-author":
+      ev.preventDefault();
+      ev.stopPropagation();
+      applyAuthorFilter(action.dataset.handle);
       return;
     case "toggle-replies":
       if (!tweetId) return;
@@ -850,6 +1183,19 @@ async function onContentClick(ev) {
         tweetEl.querySelector(".replies-thread")?.remove();
       } else {
         REPLIES_OPEN.add(tweetId);
+        REPLIES_THREAD_ONLY.delete(tweetId);
+        await renderRepliesInto(tweetEl, tweetId, false);
+      }
+      return;
+    case "toggle-thread":
+      if (!tweetId) return;
+      if (REPLIES_OPEN.has(tweetId) && REPLIES_THREAD_ONLY.has(tweetId)) {
+        REPLIES_OPEN.delete(tweetId);
+        REPLIES_THREAD_ONLY.delete(tweetId);
+        tweetEl.querySelector(".replies-thread")?.remove();
+      } else {
+        REPLIES_OPEN.add(tweetId);
+        REPLIES_THREAD_ONLY.add(tweetId);
         await renderRepliesInto(tweetEl, tweetId, false);
       }
       return;
@@ -857,6 +1203,13 @@ async function onContentClick(ev) {
       if (!tweetId) return;
       await renderRepliesInto(tweetEl, tweetId, true);
       return;
+    case "toggle-author-only": {
+      if (!tweetId) return;
+      if (REPLIES_THREAD_ONLY.has(tweetId)) REPLIES_THREAD_ONLY.delete(tweetId);
+      else REPLIES_THREAD_ONLY.add(tweetId);
+      await renderRepliesInto(tweetEl, tweetId, false);
+      return;
+    }
     case "submit-reply":
       await submitReply(tweetEl, tweetId);
       return;
@@ -930,16 +1283,33 @@ async function renderRepliesInto(tweetEl, tweetId, refresh) {
   }
 
   const replies = data.replies || [];
-  const repliesHtml = replies.length === 0
-    ? `<div class="replies-empty">Aún no hay comentarios</div>`
-    : replies.map(renderReply).join("");
+
+  // Author-only filter: identify the original tweet's author handle so we can
+  // narrow the replies down to a single-author thread (🧵 button / toggle).
+  const tweetData = currentTweets.find((t) => (t.id === tweetId) || (t.retweeted_tweet && t.retweeted_tweet.id === tweetId));
+  const original = tweetData?.is_retweet ? tweetData.retweeted_tweet : tweetData;
+  const authorHandle = (original?.author?.username || "").toLowerCase();
+  const onlyAuthor = REPLIES_THREAD_ONLY.has(tweetId);
+  const visible = (onlyAuthor && authorHandle)
+    ? replies.filter((r) => (r.author?.username || "").toLowerCase() === authorHandle)
+    : replies;
+
+  const toggle = authorHandle
+    ? `<button class="btn-link ${onlyAuthor ? "is-active" : ""}" data-action="toggle-author-only">${onlyAuthor ? "✓ Solo autor" : "Solo autor"}</button>`
+    : "";
+
+  const repliesHtml = visible.length === 0
+    ? `<div class="replies-empty">${onlyAuthor ? "El autor no continuó el hilo" : "Aún no hay comentarios"}</div>`
+    : visible.map(renderReply).join("");
 
   container.innerHTML = composeFormHtml() +
     repliesHtml +
     `<div class="replies-actions">
+       ${toggle}
        <button class="btn-link" data-action="refresh-replies">${data.from_cache ? "Recargar desde X" : "Refrescado"}</button>
      </div>`;
   attachComposeHandlers(container, tweetId);
+  observeOgCards(container);
 }
 
 function composeFormHtml() {
@@ -1124,6 +1494,8 @@ async function renderProfile() {
     ${tweets.map(renderTweet).join("")}
   `;
   contentEl.querySelector('[data-action="back"]').addEventListener("click", () => history.back());
+  observeOgCards();
+  observeReadTweets();
 }
 
 // ---------------------------------------------------------------------------
@@ -1181,6 +1553,30 @@ function formatRelative(s) {
 function formatFullDate(s) {
   const t = parseTwitterDate(s);
   return t ? new Date(t).toLocaleString() : "";
+}
+
+function rawNum(v) {
+  if (v == null || v === "") return 0;
+  const n = parseInt(String(v).replace(/,/g, ""), 10);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatExact(v) {
+  const n = rawNum(v);
+  return n > 0 ? n.toLocaleString("es-ES") : "0";
+}
+
+function renderEngagement(m) {
+  const views = rawNum(m?.views);
+  if (views < 100) return "";
+  const eng = rawNum(m?.likes) + rawNum(m?.retweets) + rawNum(m?.replies) + rawNum(m?.bookmarks);
+  if (eng <= 0) return "";
+  const pct = (eng / views) * 100;
+  const display = pct >= 10 ? pct.toFixed(0) : pct.toFixed(1);
+  let cls = "low";
+  if (pct >= 5) cls = "high";
+  else if (pct >= 1.5) cls = "mid";
+  return `<div class="tweet-engagement engagement-${cls}" title="Engagement ratio · ${eng.toLocaleString("es-ES")} interacciones / ${views.toLocaleString("es-ES")} vistas">${display}% engagement</div>`;
 }
 
 function formatNum(v) {
