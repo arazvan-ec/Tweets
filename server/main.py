@@ -193,7 +193,13 @@ def api_tweets():
             continue
         seen.add(tid)
         unique.append(t)
-    unique.sort(key=lambda t: t.get("created_at") or "", reverse=True)
+    # Sort by capture time (newest captures first) so freshly-seen tweets
+    # bubble up. Ties broken by the tweet's own creation date so two tweets
+    # captured in the same snapshot keep a stable order.
+    unique.sort(
+        key=lambda t: (t.get("_first_seen_at") or "", t.get("created_at") or ""),
+        reverse=True,
+    )
 
     total = len(unique)
     page = unique[offset:offset + limit]
