@@ -33,7 +33,6 @@ const sentinelEl = $("#scroll-sentinel");
 const LAST_SEEN_KEY = "tweets:last_seen_at";
 const REPLIES_OPEN = new Set();
 const REPLIES_CACHE = new Map();
-const COMPOSE_OPEN = new Set();
 const PAGE_SIZE = 25;
 
 let snapshots = [];
@@ -536,7 +535,7 @@ function renderTweet(t) {
         ${quote}
         ${card}
         <div class="tweet-actions">
-          <button class="tweet-action action-reply" data-action="toggle-compose" title="Responder">
+          <button class="tweet-action action-reply" data-action="toggle-replies" title="Comentarios">
             ${ICONS.reply}<span>${formatNum(m.replies)}</span>
           </button>
           <button class="tweet-action action-retweet ${vs.retweeted ? "is-active" : ""}" data-action="toggle-retweet" title="Retweet">
@@ -550,9 +549,6 @@ function renderTweet(t) {
           </button>
           <button class="tweet-action action-views" title="Vistas">
             ${ICONS.views}<span>${formatNum(m.views)}</span>
-          </button>
-          <button class="tweet-action" data-action="toggle-replies" title="Ver hilo">
-            💬
           </button>
         </div>
       </div>
@@ -746,16 +742,6 @@ async function onContentClick(ev) {
       if (!tweetId) return;
       await renderRepliesInto(tweetEl, tweetId, true);
       return;
-    case "toggle-compose":
-      if (!tweetId) return;
-      if (COMPOSE_OPEN.has(tweetId)) {
-        COMPOSE_OPEN.delete(tweetId);
-        tweetEl.querySelector(".reply-compose")?.remove();
-      } else {
-        COMPOSE_OPEN.add(tweetId);
-        renderComposeInto(tweetEl, tweetId);
-      }
-      return;
     case "submit-reply":
       await submitReply(tweetEl, tweetId);
       return;
@@ -798,7 +784,11 @@ async function renderRepliesInto(tweetEl, tweetId, refresh) {
     container.className = "replies-thread";
     tweetEl.querySelector(".tweet-body").appendChild(container);
   }
-  container.innerHTML = `<div class="replies-loading">Cargando comentarios…</div>`;
+
+  // Compose form at the top + loading skeleton below.
+  container.innerHTML = composeFormHtml() +
+    `<div class="replies-loading">Cargando comentarios…</div>`;
+  attachComposeHandlers(container, tweetId);
 
   let data;
   try {
@@ -812,24 +802,44 @@ async function renderRepliesInto(tweetEl, tweetId, refresh) {
       REPLIES_CACHE.set(tweetId, data.replies || []);
     }
   } catch (e) {
-    container.innerHTML = `<div class="replies-empty">Error: ${escapeHtml(e.message)}</div>`;
+    const loader = container.querySelector(".replies-loading");
+    if (loader) loader.outerHTML = `<div class="replies-empty">Error: ${escapeHtml(e.message)}</div>`;
     return;
   }
 
   const replies = data.replies || [];
-  if (replies.length === 0) {
-    container.innerHTML = `
-      <div class="replies-empty">Sin comentarios</div>
-      <div class="replies-actions">
-        <button class="btn-link" data-action="refresh-replies">Buscar comentarios en X</button>
-      </div>`;
-    return;
-  }
+  const repliesHtml = replies.length === 0
+    ? `<div class="replies-empty">Aún no hay comentarios</div>`
+    : replies.map(renderReply).join("");
 
-  container.innerHTML = replies.map(renderReply).join("") +
+  container.innerHTML = composeFormHtml() +
+    repliesHtml +
     `<div class="replies-actions">
        <button class="btn-link" data-action="refresh-replies">${data.from_cache ? "Recargar desde X" : "Refrescado"}</button>
      </div>`;
+  attachComposeHandlers(container, tweetId);
+}
+
+function composeFormHtml() {
+  return `
+    <div class="reply-compose">
+      <textarea placeholder="Escribe tu respuesta..." maxlength="280"></textarea>
+      <div class="reply-compose-bar">
+        <span class="reply-counter">0 / 280</span>
+        <button class="btn-primary" data-action="submit-reply">Responder</button>
+      </div>
+    </div>`;
+}
+
+function attachComposeHandlers(container, tweetId) {
+  const ta = container.querySelector(".reply-compose textarea");
+  const counter = container.querySelector(".reply-compose .reply-counter");
+  if (!ta || !counter) return;
+  ta.addEventListener("input", () => {
+    const n = ta.value.length;
+    counter.textContent = `${n} / 280`;
+    counter.classList.toggle("over", n > 280);
+  });
 }
 
 function renderReply(t) {
@@ -858,35 +868,14 @@ function renderReply(t) {
 }
 
 // ---------------------------------------------------------------------------
-// Compose
+// Reply submission
 // ---------------------------------------------------------------------------
 
-function renderComposeInto(tweetEl, tweetId) {
-  const wrap = document.createElement("div");
-  wrap.className = "reply-compose";
-  wrap.innerHTML = `
-    <textarea placeholder="Escribe tu respuesta..." maxlength="280"></textarea>
-    <div class="reply-compose-bar">
-      <span class="reply-counter">0 / 280</span>
-      <button class="btn-primary" data-action="submit-reply">Responder</button>
-    </div>
-  `;
-  tweetEl.querySelector(".tweet-body").appendChild(wrap);
-  const ta = wrap.querySelector("textarea");
-  const counter = wrap.querySelector(".reply-counter");
-  ta.focus();
-  ta.addEventListener("input", () => {
-    const n = ta.value.length;
-    counter.textContent = `${n} / 280`;
-    counter.classList.toggle("over", n > 280);
-  });
-}
-
 async function submitReply(tweetEl, tweetId) {
-  const wrap = tweetEl.querySelector(".reply-compose");
-  if (!wrap) return;
-  const ta = wrap.querySelector("textarea");
-  const btn = wrap.querySelector(".btn-primary");
+  const compose = tweetEl.querySelector(".replies-thread .reply-compose");
+  if (!compose) return;
+  const ta = compose.querySelector("textarea");
+  const btn = compose.querySelector(".btn-primary");
   const text = ta.value.trim();
   if (!text) {
     showToast("Escribe algo primero", "error");
@@ -902,14 +891,14 @@ async function submitReply(tweetEl, tweetId) {
     });
     if (!resp.ok) throw new Error(await resp.text() || `HTTP ${resp.status}`);
     showToast("✓ Respuesta enviada", "success");
-    COMPOSE_OPEN.delete(tweetId);
-    wrap.remove();
     // Bump reply count in UI
-    const replyAction = tweetEl.querySelector('.action-reply span');
+    const replyAction = tweetEl.querySelector(".action-reply span");
     if (replyAction) {
       const prev = parseInt(replyAction.textContent) || 0;
       replyAction.textContent = formatNum(prev + 1);
     }
+    // Re-fetch the conversation so the new reply appears immediately.
+    await renderRepliesInto(tweetEl, tweetId, /*refresh=*/true);
   } catch (e) {
     showToast(`Error: ${e.message}`, "error");
     btn.disabled = false;
