@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+# Track data/tweets/ snapshots — do NOT add a data/ blanket ignore here
