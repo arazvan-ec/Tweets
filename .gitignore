@@ -5,3 +5,5 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+# Keep data/tweets/ tracked — tweet JSON files belong in the repo
+
