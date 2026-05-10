@@ -6,21 +6,25 @@ Supabase. The only thing that touches local disk is the session cookie file.
 
 import argparse
 import asyncio
+import json
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import twikit
 from dotenv import load_dotenv
-from supabase import Client, create_client
 
 load_dotenv()
 
 # Local cookie file (session token, not tweet data). Created on first run from
 # TWITTER_COOKIES_JSON if missing, refreshed by twikit on subsequent runs.
 COOKIES_FILE = Path(__file__).parent.parent / "data" / ".cookies.json"
+
+# Directory where fetched tweets are saved as JSONL files.
+TWEETS_DIR = Path(__file__).parent.parent / "data" / "tweets"
 
 
 # ---------------------------------------------------------------------------
@@ -328,7 +332,8 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 # Supabase
 # ---------------------------------------------------------------------------
 
-def supabase_client() -> Client:
+def supabase_client():
+    from supabase import Client, create_client
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_KEY")
     if not url or not key:
@@ -482,13 +487,56 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 
 
 # ---------------------------------------------------------------------------
+# File storage
+# ---------------------------------------------------------------------------
+
+def save_to_files(tweets: list[dict], source: str) -> Path:
+    """Save tweets as JSONL to data/tweets/YYYY-MM-DD/<source>.jsonl."""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    out_dir = TWEETS_DIR / today
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / f"{source}.jsonl"
+    with out_file.open("w", encoding="utf-8") as f:
+        for t in tweets:
+            f.write(json.dumps(t, ensure_ascii=False) + "\n")
+    print(f"  Saved {len(tweets)} tweets → {out_file}")
+    return out_file
+
+
+def git_commit_tweets(message: str | None = None):
+    """Stage data/tweets/ and create a git commit."""
+    repo_root = Path(__file__).parent.parent
+    if not message:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        message = f"tweets: fetch {today}"
+    subprocess.run(["git", "add", "data/tweets/"], cwd=repo_root, check=True)
+    result = subprocess.run(
+        ["git", "diff", "--cached", "--quiet"], cwd=repo_root
+    )
+    if result.returncode == 0:
+        print("  Nothing new to commit.")
+        return
+    subprocess.run(["git", "commit", "-m", message], cwd=repo_root, check=True)
+    subprocess.run(
+        ["git", "push", "-u", "origin", "HEAD"], cwd=repo_root, check=True
+    )
+    print("  Committed and pushed.")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, output: str = "supabase", commit: bool = False):
     username = os.getenv("TWITTER_USERNAME")
-    sb = supabase_client()
-    print("Supabase: connected.\n")
+
+    use_supabase = output in ("supabase", "both")
+    use_files = output in ("files", "both")
+
+    sb = None
+    if use_supabase:
+        sb = supabase_client()
+        print("Supabase: connected.\n")
 
     client = await get_client()
 
@@ -515,13 +563,20 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+
+        if use_files:
+            save_to_files(tweets, kind)
+        if use_supabase and sb:
+            push_snapshot(sb, tweets, kind, username)
+
+    if use_files and commit:
+        git_commit_tweets()
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(description="Fetch tweets and store them.")
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
@@ -534,8 +589,19 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--output",
+        choices=["supabase", "files", "both"],
+        default="supabase",
+        help="Where to store tweets: supabase, files (data/tweets/), or both (default: supabase)",
+    )
+    parser.add_argument(
+        "--commit",
+        action="store_true",
+        help="After saving files, git commit + push data/tweets/ (only with --output files|both)",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, args.output, args.commit))
 
 
 if __name__ == "__main__":

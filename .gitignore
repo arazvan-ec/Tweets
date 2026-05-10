@@ -5,3 +5,5 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# tweet data is intentionally tracked — do NOT add data/tweets/ here
