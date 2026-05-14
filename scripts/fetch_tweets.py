@@ -325,15 +325,36 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 
 
 # ---------------------------------------------------------------------------
+# Local file storage
+# ---------------------------------------------------------------------------
+
+DATA_DIR = Path(__file__).parent.parent / "data" / "tweets"
+
+
+def save_to_file(tweets: list[dict], source: str) -> Path:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+    filename = DATA_DIR / f"{timestamp}_{source}.json"
+    payload = {
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "source": source,
+        "count": len(tweets),
+        "tweets": tweets,
+    }
+    filename.write_text(__import__("json").dumps(payload, ensure_ascii=False, indent=2))
+    print(f"  Saved {len(tweets)} tweets -> {filename.relative_to(Path(__file__).parent.parent)}")
+    return filename
+
+
+# ---------------------------------------------------------------------------
 # Supabase
 # ---------------------------------------------------------------------------
 
-def supabase_client() -> Client:
+def supabase_client() -> Client | None:
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_KEY")
     if not url or not key:
-        print("ERROR: SUPABASE_URL / SUPABASE_KEY required (set them in .env)")
-        sys.exit(1)
+        return None
     return create_client(url, key)
 
 
@@ -488,7 +509,10 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 async def run(source: str, max_tweets: int):
     username = os.getenv("TWITTER_USERNAME")
     sb = supabase_client()
-    print("Supabase: connected.\n")
+    if sb:
+        print("Supabase: connected.")
+    else:
+        print("Supabase: not configured, skipping (tweets will be saved locally only).")
 
     client = await get_client()
 
@@ -515,7 +539,9 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+        save_to_file(tweets, kind)
+        if sb:
+            push_snapshot(sb, tweets, kind, username)
 
     print("\nDone.")
 

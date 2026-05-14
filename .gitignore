@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+# Keep data/tweets/ tracked — that's where fetched tweets are stored
