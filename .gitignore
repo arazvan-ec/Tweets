@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Tweet data is intentionally tracked in the repo (data/tweets/)
+# Only ignore the cookies — never the tweet files
