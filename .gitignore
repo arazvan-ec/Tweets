@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+# tweet JSON snapshots are intentionally tracked (data/tweets/*.json)
