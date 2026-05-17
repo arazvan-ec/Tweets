@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Keep data/tweets/ tracked (tweet snapshots live here)
+# but never commit any secret file under data/
+!data/tweets/
