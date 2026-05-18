@@ -1,6 +1,7 @@
 .env
 data/.cookies.json
 data/.session_cookies.json
+# Tweet JSON files are intentionally tracked — do NOT add data/tweets/ here
 __pycache__/
 *.pyc
 .venv/
