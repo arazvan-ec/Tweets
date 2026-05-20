@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Track data/ JSON files but not the session cookie inside it
+!data/
+!data/**/*.json

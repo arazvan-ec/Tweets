@@ -6,6 +6,7 @@ Supabase. The only thing that touches local disk is the session cookie file.
 
 import argparse
 import asyncio
+import json
 import os
 import re
 import sys
@@ -21,6 +22,8 @@ load_dotenv()
 # Local cookie file (session token, not tweet data). Created on first run from
 # TWITTER_COOKIES_JSON if missing, refreshed by twikit on subsequent runs.
 COOKIES_FILE = Path(__file__).parent.parent / "data" / ".cookies.json"
+
+DATA_DIR = Path(__file__).parent.parent / "data"
 
 
 # ---------------------------------------------------------------------------
@@ -328,12 +331,11 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 # Supabase
 # ---------------------------------------------------------------------------
 
-def supabase_client() -> Client:
+def supabase_client() -> Client | None:
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_KEY")
     if not url or not key:
-        print("ERROR: SUPABASE_URL / SUPABASE_KEY required (set them in .env)")
-        sys.exit(1)
+        return None
     return create_client(url, key)
 
 
@@ -405,9 +407,36 @@ def _chunked(items, size):
         yield items[i:i + size]
 
 
-def push_tweets_only(sb: Client, tweets: list[dict]):
+# ---------------------------------------------------------------------------
+# File storage
+# ---------------------------------------------------------------------------
+
+def save_to_file(tweets: list[dict], source: str, username: str) -> Path:
+    """Saves tweets as a JSON file under data/YYYY-MM-DD/<source>.json.
+
+    Each day's file is overwritten with the latest fetch so diffs across
+    commits show what changed in your feed day-to-day.
+    """
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    out_dir = DATA_DIR / today
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{source}.json"
+
+    payload = {
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "source": source,
+        "username": username,
+        "count": len(tweets),
+        "tweets": tweets,
+    }
+    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+    print(f"  Saved {len(tweets)} tweets -> {out_path.relative_to(DATA_DIR.parent)}")
+    return out_path
+
+
+def push_tweets_only(sb: Client | None, tweets: list[dict]):
     """Upserts authors + tweets without creating a snapshot (used for replies)."""
-    if not tweets:
+    if not tweets or sb is None:
         return
     now_iso = datetime.now(timezone.utc).isoformat()
 
@@ -433,9 +462,11 @@ def push_tweets_only(sb: Client, tweets: list[dict]):
         sb.table("tweets").upsert(chunk, on_conflict="id").execute()
 
 
-def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
+def push_snapshot(sb: Client | None, tweets: list[dict], source: str, username: str):
     if not tweets:
         print(f"  No {source} tweets to push.")
+        return
+    if sb is None:
         return
 
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -485,10 +516,15 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, save_files: bool = True):
     username = os.getenv("TWITTER_USERNAME")
+
     sb = supabase_client()
-    print("Supabase: connected.\n")
+    if sb:
+        print("Supabase: connected.")
+    else:
+        print("Supabase: not configured — skipping DB push.")
+    print()
 
     client = await get_client()
 
@@ -515,13 +551,18 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+        if save_files:
+            save_to_file(tweets, kind, username)
+        if sb:
+            push_snapshot(sb, tweets, kind, username)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(
+        description="Fetch tweets and save them as JSON files in data/ (and optionally to Supabase)."
+    )
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
@@ -534,8 +575,13 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--no-files",
+        action="store_true",
+        help="Skip saving JSON files to data/ (Supabase only)",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, save_files=not args.no_files))
 
 
 if __name__ == "__main__":
