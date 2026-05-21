@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Los archivos JSONL de tweets SÍ se rastrean (están en data/tweets/)
+# Solo se excluyen las cookies de sesión (arriba)
