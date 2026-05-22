@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Tweet snapshots are intentionally tracked (the whole point of save_to_repo.py)
+# data/tweets/*.json  ← do NOT ignore these
