@@ -6,6 +6,7 @@ Supabase. The only thing that touches local disk is the session cookie file.
 
 import argparse
 import asyncio
+import json
 import os
 import re
 import sys
@@ -325,6 +326,53 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 
 
 # ---------------------------------------------------------------------------
+# Local file storage (NDJSON, one tweet per line, deduped by id)
+# ---------------------------------------------------------------------------
+
+DATA_DIR = Path(__file__).parent.parent / "data" / "tweets"
+
+
+def save_to_files(tweets: list[dict], source: str) -> int:
+    """Appends new tweets to data/tweets/<source>/YYYY-MM-DD.ndjson.
+    Returns the number of tweets actually written (skips duplicates)."""
+    if not tweets:
+        return 0
+
+    out_dir = DATA_DIR / source
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    ndjson_path = out_dir / f"{today}.ndjson"
+
+    existing_ids: set[str] = set()
+    if ndjson_path.exists():
+        with ndjson_path.open() as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        existing_ids.add(json.loads(line)["id"])
+                    except Exception:
+                        pass
+
+    written = 0
+    with ndjson_path.open("a", encoding="utf-8") as f:
+        for t in tweets:
+            tid = t.get("id")
+            if not tid or tid in existing_ids:
+                continue
+            existing_ids.add(tid)
+            f.write(json.dumps(t, ensure_ascii=False) + "\n")
+            written += 1
+
+    if written:
+        print(f"  Saved {written} new tweets to {ndjson_path.relative_to(Path(__file__).parent.parent)}")
+    else:
+        print(f"  No new tweets to save locally (all already in {ndjson_path.name})")
+    return written
+
+
+# ---------------------------------------------------------------------------
 # Supabase
 # ---------------------------------------------------------------------------
 
@@ -485,7 +533,7 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, save_local: bool = True):
     username = os.getenv("TWITTER_USERNAME")
     sb = supabase_client()
     print("Supabase: connected.\n")
@@ -516,12 +564,14 @@ async def run(source: str, max_tweets: int):
         else:
             continue
         push_snapshot(sb, tweets, kind, username)
+        if save_local:
+            save_to_files(tweets, kind)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase and local NDJSON files.")
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
@@ -534,8 +584,13 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--no-local",
+        action="store_true",
+        help="Skip saving to local NDJSON files (Supabase only)",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, save_local=not args.no_local))
 
 
 if __name__ == "__main__":
