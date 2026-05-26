@@ -5,3 +5,8 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Los archivos de tweets SÍ se guardan en el repo (data/tweets/*.jsonl)
+# Solo excluimos la carpeta raíz de data que no sea tweets/
+data/*.json
+data/*.txt
