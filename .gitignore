@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Tweet JSON snapshots are intentionally tracked (not ignored)
+# data/tweets/ — DO NOT add this here
