@@ -6,6 +6,7 @@ Supabase. The only thing that touches local disk is the session cookie file.
 
 import argparse
 import asyncio
+import json
 import os
 import re
 import sys
@@ -325,6 +326,56 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 
 
 # ---------------------------------------------------------------------------
+# Local file storage
+# ---------------------------------------------------------------------------
+
+DATA_DIR = Path(__file__).parent.parent / "data" / "tweets"
+
+
+def save_local(tweets: list[dict], source: str, username: str) -> Path:
+    """Append tweets to a daily JSONL file, deduplicating by tweet id.
+
+    Each run appends only new tweets (those not already in the file).
+    Returns the path of the file written to.
+    """
+    if not tweets:
+        print(f"  No {source} tweets to save locally.")
+        return None
+
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    out_path = DATA_DIR / f"{today}_{source}.jsonl"
+
+    # Load existing ids to deduplicate
+    existing_ids: set[str] = set()
+    if out_path.exists():
+        with out_path.open() as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        existing_ids.add(json.loads(line)["id"])
+                    except Exception:
+                        pass
+
+    new_tweets = [t for t in tweets if t.get("id") and t["id"] not in existing_ids]
+    if not new_tweets:
+        print(f"  {source}: all {len(tweets)} tweets already in {out_path.name}, nothing new.")
+        return out_path
+
+    fetched_at = datetime.now(timezone.utc).isoformat()
+    with out_path.open("a") as f:
+        for t in new_tweets:
+            t["_fetched_at"] = fetched_at
+            t["_source"] = source
+            t["_username"] = username
+            f.write(json.dumps(t, ensure_ascii=False) + "\n")
+
+    print(f"  {source}: saved {len(new_tweets)} new tweets → {out_path}")
+    return out_path
+
+
+# ---------------------------------------------------------------------------
 # Supabase
 # ---------------------------------------------------------------------------
 
@@ -485,10 +536,13 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, save_local_files: bool = False, use_supabase: bool = True):
     username = os.getenv("TWITTER_USERNAME")
-    sb = supabase_client()
-    print("Supabase: connected.\n")
+
+    sb = None
+    if use_supabase:
+        sb = supabase_client()
+        print("Supabase: connected.\n")
 
     client = await get_client()
 
@@ -515,13 +569,19 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+
+        if sb is not None:
+            push_snapshot(sb, tweets, kind, username)
+        if save_local_files:
+            save_local(tweets, kind, username)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(
+        description="Fetch tweets and store them in Supabase and/or local JSONL files."
+    )
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
@@ -534,8 +594,27 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        default=False,
+        help="Save tweets to local JSONL files in data/tweets/ (for git storage)",
+    )
+    parser.add_argument(
+        "--no-supabase",
+        action="store_true",
+        default=False,
+        help="Skip Supabase upload (useful when running locally without Supabase credentials)",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+
+    use_supabase = not args.no_supabase
+    # If neither destination is active, warn and default to local.
+    if not use_supabase and not args.local:
+        print("Warning: --no-supabase without --local means no output. Enabling --local.")
+        args.local = True
+
+    asyncio.run(run(args.source, args.max, save_local_files=args.local, use_supabase=use_supabase))
 
 
 if __name__ == "__main__":
