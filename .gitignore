@@ -5,3 +5,5 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Tweet data files are tracked intentionally; only secrets are excluded above.
