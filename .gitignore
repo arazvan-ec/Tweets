@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Tweet snapshots are intentionally tracked in the repo.
+# Uncomment the line below if you prefer to keep them out of git:
+# data/tweets/*.json
