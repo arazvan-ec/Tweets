@@ -1,7 +1,10 @@
 .env
+# Session cookies — credentials, never committed
 data/.cookies.json
 data/.session_cookies.json
 __pycache__/
 *.pyc
 .venv/
 venv/
+# Tweet JSON files are intentionally tracked (that's the point of save_to_repo.py)
+# Nothing under data/tweets/ is ignored.
