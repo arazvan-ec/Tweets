@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Tweet data intentionally NOT ignored — it's saved to the repo
+# data/tweets/ is committed on each fetch run
