@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Track data files (snapshots + tweets.jsonl) but not cookies
+# data/snapshots/*.json and data/tweets.jsonl are intentionally committed
