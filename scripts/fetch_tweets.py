@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-Fetches tweets from X/Twitter using twikit and stores everything directly in
-Supabase. The only thing that touches local disk is the session cookie file.
+Fetches tweets from X/Twitter using twikit.
+Stores in Supabase (default) and/or local JSONL files under data/tweets/.
 """
 
 import argparse
 import asyncio
+import json
 import os
 import re
 import sys
@@ -21,6 +22,7 @@ load_dotenv()
 # Local cookie file (session token, not tweet data). Created on first run from
 # TWITTER_COOKIES_JSON if missing, refreshed by twikit on subsequent runs.
 COOKIES_FILE = Path(__file__).parent.parent / "data" / ".cookies.json"
+TWEETS_DIR = Path(__file__).parent.parent / "data" / "tweets"
 
 
 # ---------------------------------------------------------------------------
@@ -482,13 +484,37 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 
 
 # ---------------------------------------------------------------------------
+# Local file storage
+# ---------------------------------------------------------------------------
+
+def save_to_file(tweets: list[dict], source: str) -> Path:
+    """Saves tweets as a JSONL file in data/tweets/<source>/YYYY-MM-DD_HHMM.jsonl.
+    Returns the path of the written file."""
+    if not tweets:
+        return None
+    TWEETS_DIR.mkdir(parents=True, exist_ok=True)
+    source_dir = TWEETS_DIR / source
+    source_dir.mkdir(exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M")
+    path = source_dir / f"{stamp}.jsonl"
+    with path.open("w", encoding="utf-8") as f:
+        for t in tweets:
+            f.write(json.dumps(t, ensure_ascii=False) + "\n")
+    print(f"  Saved {len(tweets)} tweets -> {path}")
+    return path
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, local: bool = False, no_supabase: bool = False):
     username = os.getenv("TWITTER_USERNAME")
-    sb = supabase_client()
-    print("Supabase: connected.\n")
+
+    sb = None
+    if not no_supabase:
+        sb = supabase_client()
+        print("Supabase: connected.\n")
 
     client = await get_client()
 
@@ -515,13 +541,16 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+        if sb is not None:
+            push_snapshot(sb, tweets, kind, username)
+        if local:
+            save_to_file(tweets, kind)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase and/or local files.")
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
@@ -534,8 +563,18 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        help="Also save tweets as JSONL files in data/tweets/",
+    )
+    parser.add_argument(
+        "--no-supabase",
+        action="store_true",
+        help="Skip Supabase upload (useful with --local for offline analysis)",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, local=args.local, no_supabase=args.no_supabase))
 
 
 if __name__ == "__main__":

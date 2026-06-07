@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Tweet data files are tracked intentionally (data/tweets/**/*.jsonl)
+# Only the cookie/session files above are excluded.
