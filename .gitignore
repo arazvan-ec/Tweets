@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Tweet data files are intentionally tracked in the repo.
+# Only the session cookie files above are excluded.
