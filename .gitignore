@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Keep tweet JSON snapshots tracked; only ignore hidden cookie files (above).
+# data/tweets/ is intentionally tracked.

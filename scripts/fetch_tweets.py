@@ -325,15 +325,34 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 
 
 # ---------------------------------------------------------------------------
+# Local file storage
+# ---------------------------------------------------------------------------
+
+def save_to_files(tweets: list[dict], source: str, output_dir: str = "data/tweets") -> str:
+    """Saves tweets as a JSON file under output_dir/source/YYYY-MM-DDTHH-MM.json.
+    Returns the path of the written file."""
+    import json
+    from pathlib import Path
+
+    now = datetime.now(timezone.utc)
+    stamp = now.strftime("%Y-%m-%dT%H-%M")
+    dest = Path(output_dir) / source
+    dest.mkdir(parents=True, exist_ok=True)
+    fpath = dest / f"{stamp}.json"
+    fpath.write_text(json.dumps(tweets, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"  Saved {len(tweets)} tweets -> {fpath}")
+    return str(fpath)
+
+
+# ---------------------------------------------------------------------------
 # Supabase
 # ---------------------------------------------------------------------------
 
-def supabase_client() -> Client:
+def supabase_client() -> Client | None:
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_KEY")
     if not url or not key:
-        print("ERROR: SUPABASE_URL / SUPABASE_KEY required (set them in .env)")
-        sys.exit(1)
+        return None
     return create_client(url, key)
 
 
@@ -405,9 +424,9 @@ def _chunked(items, size):
         yield items[i:i + size]
 
 
-def push_tweets_only(sb: Client, tweets: list[dict]):
+def push_tweets_only(sb: Client | None, tweets: list[dict]):
     """Upserts authors + tweets without creating a snapshot (used for replies)."""
-    if not tweets:
+    if not tweets or sb is None:
         return
     now_iso = datetime.now(timezone.utc).isoformat()
 
@@ -433,9 +452,11 @@ def push_tweets_only(sb: Client, tweets: list[dict]):
         sb.table("tweets").upsert(chunk, on_conflict="id").execute()
 
 
-def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
+def push_snapshot(sb: Client | None, tweets: list[dict], source: str, username: str):
     if not tweets:
         print(f"  No {source} tweets to push.")
+        return
+    if sb is None:
         return
 
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -485,10 +506,14 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, output_dir: str | None = "data/tweets", no_local: bool = False):
     username = os.getenv("TWITTER_USERNAME")
+
     sb = supabase_client()
-    print("Supabase: connected.\n")
+    if sb:
+        print("Supabase: connected.")
+    else:
+        print("Supabase: not configured — skipping cloud storage.")
 
     client = await get_client()
 
@@ -506,6 +531,7 @@ async def run(source: str, max_tweets: int):
         print(f"ERROR: unknown source '{source}'")
         sys.exit(1)
 
+    print()
     for (kind,) in plan:
         if kind == "for_you":
             tweets = await fetch_for_you(client, max_tweets)
@@ -515,13 +541,17 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
+        if not no_local and output_dir:
+            save_to_files(tweets, kind, output_dir)
         push_snapshot(sb, tweets, kind, username)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(
+        description="Fetch tweets from X/Twitter and save locally and/or to Supabase.",
+    )
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
@@ -534,8 +564,18 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--output-dir",
+        default="data/tweets",
+        help="Directory where JSON snapshots are saved (default: data/tweets)",
+    )
+    parser.add_argument(
+        "--no-local",
+        action="store_true",
+        help="Skip saving to local files (Supabase must be configured)",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, output_dir=args.output_dir, no_local=args.no_local))
 
 
 if __name__ == "__main__":
