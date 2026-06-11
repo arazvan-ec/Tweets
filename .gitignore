@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Keep data/feeds/ and data/archive.jsonl tracked in git.
+# Only the session cookie files above are excluded.
