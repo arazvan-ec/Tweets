@@ -325,6 +325,44 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 
 
 # ---------------------------------------------------------------------------
+# File-based storage
+# ---------------------------------------------------------------------------
+
+import json as _json
+
+
+def save_to_files(tweets: list[dict], source: str, output_dir: str):
+    """Append new tweets to a daily JSONL file, deduplicating by tweet ID."""
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    out_file = out_dir / f"{today}_{source}.jsonl"
+
+    existing_ids: set[str] = set()
+    if out_file.exists():
+        with open(out_file) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        existing_ids.add(_json.loads(line).get("id", ""))
+                    except Exception:
+                        pass
+
+    new_tweets = [t for t in tweets if t.get("id") not in existing_ids]
+    if not new_tweets:
+        print(f"  No new {source} tweets (all {len(tweets)} already stored).")
+        return
+
+    with open(out_file, "a") as f:
+        for t in new_tweets:
+            f.write(_json.dumps(t, ensure_ascii=False) + "\n")
+
+    print(f"  Saved {len(new_tweets)} new {source} tweets → {out_file}")
+
+
+# ---------------------------------------------------------------------------
 # Supabase
 # ---------------------------------------------------------------------------
 
@@ -485,10 +523,21 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, output_dir: str | None = None):
     username = os.getenv("TWITTER_USERNAME")
-    sb = supabase_client()
-    print("Supabase: connected.\n")
+
+    sb: Client | None = None
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_KEY")
+    if supabase_url and supabase_key:
+        try:
+            sb = create_client(supabase_url, supabase_key)
+            print("Supabase: connected.\n")
+        except Exception as e:
+            print(f"Supabase: connection failed ({e}), skipping.\n")
+    elif output_dir is None:
+        print("ERROR: SUPABASE_URL / SUPABASE_KEY required when --output-dir is not set.")
+        sys.exit(1)
 
     client = await get_client()
 
@@ -515,13 +564,18 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+        if sb is not None:
+            push_snapshot(sb, tweets, kind, username)
+        if output_dir is not None:
+            save_to_files(tweets, kind, output_dir)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(
+        description="Fetch tweets and store them in Supabase and/or local JSONL files."
+    )
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
@@ -534,8 +588,15 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        metavar="DIR",
+        help="Save tweets as daily JSONL files in DIR (e.g. data/tweets). "
+             "Supabase is used when credentials are available; not required if this flag is set.",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, args.output_dir))
 
 
 if __name__ == "__main__":
