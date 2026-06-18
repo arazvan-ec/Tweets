@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Keep data/tweets/ tracked — that's our tweet archive
+!data/tweets/
