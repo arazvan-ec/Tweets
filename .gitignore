@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Track tweet data files (data/tweets/**/*.jsonl) but ignore cookies inside data/
+!data/tweets/

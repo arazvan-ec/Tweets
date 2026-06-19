@@ -1,0 +1,61 @@
+name: Fetch Tweets
+
+on:
+  schedule:
+    # Every hour at :00 UTC
+    - cron: '0 * * * *'
+  # Allow manual runs from the Actions tab
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Feed to fetch'
+        required: false
+        default: 'all_feeds'
+        type: choice
+        options: [for_you, following, mine, all_feeds, all]
+      max:
+        description: 'Max tweets per source'
+        required: false
+        default: '100'
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit & push data files
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch tweets
+        env:
+          # Preferred: paste the JSON from data/.cookies.json as a secret.
+          TWITTER_COOKIES_JSON: ${{ secrets.TWITTER_COOKIES_JSON }}
+          # Fallback: plain credentials (used on first login to generate cookies).
+          TWITTER_EMAIL:    ${{ secrets.TWITTER_EMAIL }}
+          TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
+          TWITTER_USERNAME: ${{ secrets.TWITTER_USERNAME }}
+        run: |
+          python scripts/save_to_files.py \
+            --source ${{ inputs.source || 'all_feeds' }} \
+            --max    ${{ inputs.max    || '100'       }}
+
+      - name: Commit and push data files
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/tweets/
+          # Only commit if there is something new
+          git diff --staged --quiet && echo "Nothing new to commit." && exit 0
+          git commit -m "data: tweets $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push
