@@ -1,0 +1,60 @@
+name: Fetch Tweets
+
+on:
+  schedule:
+    # Runs every 3 hours — adjust to taste (cron is UTC)
+    - cron: '0 */3 * * *'
+  workflow_dispatch:   # also allows manual runs from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # Fetch the full history so the commit can be pushed cleanly
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch tweets and save to repo
+        env:
+          # Preferred: export your session cookies as JSON and store as a secret.
+          # Run once locally: python -c "import json,pathlib; print(pathlib.Path('data/.cookies.json').read_text())"
+          # Then add the output as the TWITTER_COOKIES_JSON secret in:
+          #   GitHub → repo Settings → Secrets and variables → Actions
+          TWITTER_COOKIES_JSON: ${{ secrets.TWITTER_COOKIES_JSON }}
+          # Fallback: email/password login (twikit re-creates the session)
+          TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
+          TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
+          TWITTER_USERNAME: ${{ secrets.TWITTER_USERNAME }}
+        run: |
+          python scripts/fetch_tweets.py \
+            --source all_feeds \
+            --max 100 \
+            --output-dir data/tweets \
+            --no-supabase
+
+      - name: Commit tweet snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/tweets/
+          # Only commit if something actually changed
+          git diff --cached --quiet && echo "Nothing new to commit." || \
+            git commit -m "data: tweet snapshot $(date -u +%Y-%m-%dT%H:%MZ)"
+
+      - name: Push to repo
+        run: git push
