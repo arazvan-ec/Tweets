@@ -1,4 +1,6 @@
 .env
+# Twitter session cookies — never commit these
+data/**/.cookies.json
 data/.cookies.json
 data/.session_cookies.json
 __pycache__/
