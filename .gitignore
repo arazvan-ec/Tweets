@@ -1,6 +1,7 @@
 .env
 data/.cookies.json
 data/.session_cookies.json
+# data/tweets/ is intentionally tracked — that's where saved tweets live
 __pycache__/
 *.pyc
 .venv/
