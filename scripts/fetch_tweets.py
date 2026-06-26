@@ -325,6 +325,24 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 
 
 # ---------------------------------------------------------------------------
+# File output
+# ---------------------------------------------------------------------------
+
+def save_to_files(tweets: list[dict], source: str, output_dir: str) -> None:
+    """Save tweets as JSONL under output_dir/YYYY-MM-DD/source_HH-MM-SS.jsonl."""
+    import json as _json
+    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    ts = datetime.now(timezone.utc).strftime("%H-%M-%S")
+    out_dir = Path(output_dir) / date
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / f"{source}_{ts}.jsonl"
+    with open(out_file, "w", encoding="utf-8") as f:
+        for tweet in tweets:
+            f.write(_json.dumps(tweet, ensure_ascii=False) + "\n")
+    print(f"  Saved {len(tweets)} tweets → {out_file}")
+
+
+# ---------------------------------------------------------------------------
 # Supabase
 # ---------------------------------------------------------------------------
 
@@ -485,10 +503,13 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, output_dir: str | None = None):
     username = os.getenv("TWITTER_USERNAME")
-    sb = supabase_client()
-    print("Supabase: connected.\n")
+
+    sb = None
+    if output_dir is None:
+        sb = supabase_client()
+        print("Supabase: connected.\n")
 
     client = await get_client()
 
@@ -515,7 +536,11 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+
+        if output_dir:
+            save_to_files(tweets, kind, output_dir)
+        else:
+            push_snapshot(sb, tweets, kind, username)
 
     print("\nDone.")
 
@@ -534,8 +559,14 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        metavar="DIR",
+        help="Save tweets as JSONL files in DIR instead of pushing to Supabase.",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, args.output_dir))
 
 
 if __name__ == "__main__":
