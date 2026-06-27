@@ -1,0 +1,54 @@
+name: Fetch tweets
+
+on:
+  schedule:
+    # Every hour at :05 to avoid GitHub Actions peak congestion
+    - cron: "5 * * * *"
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Feed to fetch (for_you / following / mine / all_feeds / all)"
+        default: "all_feeds"
+      max:
+        description: "Max tweets per source"
+        default: "50"
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to push the data files back to the repo
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install twikit>=2.1.0 python-dotenv>=1.0.0
+
+      - name: Fetch tweets
+        env:
+          TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
+          TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
+          TWITTER_USERNAME: ${{ secrets.TWITTER_USERNAME }}
+          # Optional: pre-baked cookies so the run doesn't need to log in fresh
+          # every time (avoids triggering X's suspicious login alerts).
+          # Get the value by running: cat data/.cookies.json
+          TWITTER_COOKIES_JSON: ${{ secrets.TWITTER_COOKIES_JSON }}
+        run: |
+          python scripts/save_to_files.py \
+            --source "${{ github.event.inputs.source || 'all_feeds' }}" \
+            --max    "${{ github.event.inputs.max    || '50' }}"
+
+      - name: Commit and push data files
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/tweets/
+          # Only commit if there are actual changes
+          git diff --cached --quiet || git commit -m "chore: tweet snapshot $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
