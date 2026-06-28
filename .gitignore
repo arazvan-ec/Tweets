@@ -5,3 +5,8 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Track tweet JSON files but never track cookie/session files
+!data/
+!data/**/*.json
+data/.*
