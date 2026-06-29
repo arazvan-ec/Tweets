@@ -1,0 +1,67 @@
+name: Fetch Tweets
+
+on:
+  schedule:
+    # Every hour at minute 0. Adjust if you want less frequent runs.
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Feed to fetch"
+        required: false
+        default: "all_feeds"
+        type: choice
+        options: [all_feeds, for_you, following, mine, all]
+      max:
+        description: "Max tweets per source"
+        required: false
+        default: "50"
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit and push data files
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install twikit>=2.1.0 python-dotenv>=1.0.0
+
+      - name: Write cookie file (if provided)
+        # Preferred auth: store your twikit cookies JSON in the secret
+        # TWITTER_COOKIES_JSON. Generate it once locally by running
+        # fetch_tweets.py with TWITTER_EMAIL/PASSWORD/USERNAME set,
+        # then copy the contents of data/.cookies.json into the secret.
+        if: ${{ secrets.TWITTER_COOKIES_JSON != '' }}
+        run: |
+          mkdir -p data
+          echo '${{ secrets.TWITTER_COOKIES_JSON }}' > data/.cookies.json
+
+      - name: Fetch tweets
+        env:
+          TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
+          TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
+          TWITTER_USERNAME: ${{ secrets.TWITTER_USERNAME }}
+        run: |
+          python scripts/save_tweets_to_repo.py \
+            --source "${{ inputs.source || 'all_feeds' }}" \
+            --max "${{ inputs.max || '50' }}"
+
+      - name: Commit and push data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/tweets/
+          # Only commit if something actually changed.
+          git diff --cached --quiet && echo "Nothing new to commit." || \
+            git commit -m "chore: fetch tweets $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
