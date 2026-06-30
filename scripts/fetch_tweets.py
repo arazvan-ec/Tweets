@@ -6,6 +6,7 @@ Supabase. The only thing that touches local disk is the session cookie file.
 
 import argparse
 import asyncio
+import json
 import os
 import re
 import sys
@@ -328,13 +329,48 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 # Supabase
 # ---------------------------------------------------------------------------
 
-def supabase_client() -> Client:
+def supabase_client() -> Client | None:
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_KEY")
     if not url or not key:
-        print("ERROR: SUPABASE_URL / SUPABASE_KEY required (set them in .env)")
-        sys.exit(1)
+        return None
     return create_client(url, key)
+
+
+# ---------------------------------------------------------------------------
+# Local file storage
+# ---------------------------------------------------------------------------
+
+DATA_DIR = Path(__file__).parent.parent / "data" / "tweets"
+
+
+def save_to_local(tweets: list[dict], source: str) -> Path:
+    """Append tweets to data/tweets/YYYY-MM-DD/{source}.jsonl (one JSON per line)."""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    out_dir = DATA_DIR / today
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / f"{source}.jsonl"
+
+    existing_ids: set[str] = set()
+    if out_file.exists():
+        with out_file.open() as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        existing_ids.add(json.loads(line)["id"])
+                    except Exception:
+                        pass
+
+    new_tweets = [t for t in tweets if t.get("id") not in existing_ids]
+    if new_tweets:
+        with out_file.open("a") as f:
+            for t in new_tweets:
+                f.write(json.dumps(t, ensure_ascii=False) + "\n")
+        print(f"  Saved {len(new_tweets)} new tweets → {out_file}")
+    else:
+        print(f"  No new tweets for {source} (all already in {out_file.name})")
+    return out_file
 
 
 def _to_int(v):
@@ -485,10 +521,17 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, save_local: bool = False):
     username = os.getenv("TWITTER_USERNAME")
+
     sb = supabase_client()
-    print("Supabase: connected.\n")
+    if sb:
+        print("Supabase: connected.")
+    elif not save_local:
+        print("ERROR: no Supabase credentials and --save-local not set.")
+        print("  Either configure SUPABASE_URL/KEY in .env, or pass --save-local.")
+        sys.exit(1)
+    print()
 
     client = await get_client()
 
@@ -515,13 +558,18 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+        if sb:
+            push_snapshot(sb, tweets, kind, username)
+        if save_local:
+            save_to_local(tweets, kind)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(
+        description="Fetch tweets and store them in Supabase and/or local JSONL files.",
+    )
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
@@ -534,8 +582,13 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--save-local",
+        action="store_true",
+        help="Save tweets as JSONL files under data/tweets/YYYY-MM-DD/ in the repo.",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, save_local=args.save_local))
 
 
 if __name__ == "__main__":
