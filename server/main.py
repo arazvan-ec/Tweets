@@ -350,7 +350,7 @@ def api_refresh():
         abort(500, f"fetch_tweets module unavailable: {e}")
 
     try:
-        run_async(fetch_run(source, max_n))
+        run_async(fetch_run(source, max_n, None))
     except Exception as e:
         abort(500, f"refresh failed: {e}")
 

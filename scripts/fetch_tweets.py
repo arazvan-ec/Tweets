@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """
-Fetches tweets from X/Twitter using twikit and stores everything directly in
-Supabase. The only thing that touches local disk is the session cookie file.
+Fetches tweets from X/Twitter using twikit. Every run is saved as a JSON
+snapshot under data/ in this repo (for later reading/analysis), and is also
+pushed to Supabase when SUPABASE_URL/SUPABASE_KEY are configured (used by the
+live web app).
 """
 
 import argparse
 import asyncio
+import json
 import os
 import re
 import sys
@@ -18,9 +21,12 @@ from supabase import Client, create_client
 
 load_dotenv()
 
+REPO_ROOT = Path(__file__).parent.parent
+DATA_DIR = REPO_ROOT / "data"
+
 # Local cookie file (session token, not tweet data). Created on first run from
 # TWITTER_COOKIES_JSON if missing, refreshed by twikit on subsequent runs.
-COOKIES_FILE = Path(__file__).parent.parent / "data" / ".cookies.json"
+COOKIES_FILE = DATA_DIR / ".cookies.json"
 
 
 # ---------------------------------------------------------------------------
@@ -328,12 +334,17 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 # Supabase
 # ---------------------------------------------------------------------------
 
-def supabase_client() -> Client:
+def supabase_client() -> Client | None:
+    """Returns a Supabase client, or None if it isn't configured.
+
+    Supabase is optional: the JSON snapshot saved to data/ is the source of
+    truth for archival/analysis, Supabase is only needed to feed the live
+    web app.
+    """
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_KEY")
     if not url or not key:
-        print("ERROR: SUPABASE_URL / SUPABASE_KEY required (set them in .env)")
-        sys.exit(1)
+        return None
     return create_client(url, key)
 
 
@@ -403,6 +414,31 @@ def _tweet_row(t: dict, now_iso: str) -> dict:
 def _chunked(items, size):
     for i in range(0, len(items), size):
         yield items[i:i + size]
+
+
+def write_snapshot_file(tweets: list[dict], source: str, username: str, out_dir: Path) -> Path | None:
+    """Saves a fetch as a standalone JSON file under out_dir/<date>/, so the
+    raw tweet content lives in the repo itself and can be read/diffed/
+    compared later without depending on Supabase."""
+    if not tweets:
+        print(f"  No {source} tweets to save.")
+        return None
+
+    now = datetime.now(timezone.utc)
+    day_dir = out_dir / now.strftime("%Y-%m-%d")
+    day_dir.mkdir(parents=True, exist_ok=True)
+    path = day_dir / f"{source}_{now.strftime('%Y%m%d_%H%M%S')}.json"
+
+    payload = {
+        "source": source,
+        "username": username,
+        "fetched_at": now.isoformat(),
+        "count": len(tweets),
+        "tweets": tweets,
+    }
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, default=str))
+    print(f"  Saved {len(tweets)} {source} tweets to {path.relative_to(REPO_ROOT)}")
+    return path
 
 
 def push_tweets_only(sb: Client, tweets: list[dict]):
@@ -485,10 +521,13 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, out_dir: Path | None):
     username = os.getenv("TWITTER_USERNAME")
     sb = supabase_client()
-    print("Supabase: connected.\n")
+    if sb:
+        print("Supabase: connected.\n")
+    else:
+        print("Supabase not configured — skipping it, saving JSON snapshots only.\n")
 
     client = await get_client()
 
@@ -515,18 +554,21 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+        if out_dir is not None:
+            write_snapshot_file(tweets, kind, username, out_dir)
+        if sb:
+            push_snapshot(sb, tweets, kind, username)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(description="Fetch tweets and save them as JSON in the repo (and optionally to Supabase).")
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
         default="all_feeds",
-        help="Which feed(s) to fetch (default: all_feeds = for_you + following)",
+        help="Which feed(s) to fetch (default: all_feeds = for_you + following, i.e. the tweets you'd see)",
     )
     parser.add_argument(
         "--max",
@@ -534,8 +576,19 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--out-dir",
+        default=None,
+        help="Directory to save JSON snapshots to (default: <repo>/data)",
+    )
+    parser.add_argument(
+        "--no-save-files",
+        action="store_true",
+        help="Don't write JSON snapshot files to disk (useful if you only want the Supabase push)",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    out_dir = None if args.no_save_files else Path(args.out_dir) if args.out_dir else DATA_DIR
+    asyncio.run(run(args.source, args.max, out_dir))
 
 
 if __name__ == "__main__":
