@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 """
-Fetches tweets from X/Twitter using twikit and stores everything directly in
-Supabase. The only thing that touches local disk is the session cookie file.
+Fetches tweets from X/Twitter using twikit and stores them in two places:
+
+- data/<source>.json in this repo: a deduplicated, versioned dataset (one
+  file per source) meant for later reading/analysis straight from git.
+- Supabase (optional, only if SUPABASE_URL/SUPABASE_KEY are set): powers the
+  live web UI in server/ + web/.
+
+Either sink can be disabled with --no-local / --no-supabase.
 """
 
 import argparse
 import asyncio
+import json
 import os
 import re
 import sys
@@ -18,9 +25,11 @@ from supabase import Client, create_client
 
 load_dotenv()
 
+DATA_DIR = Path(__file__).parent.parent / "data"
+
 # Local cookie file (session token, not tweet data). Created on first run from
 # TWITTER_COOKIES_JSON if missing, refreshed by twikit on subsequent runs.
-COOKIES_FILE = Path(__file__).parent.parent / "data" / ".cookies.json"
+COOKIES_FILE = DATA_DIR / ".cookies.json"
 
 
 # ---------------------------------------------------------------------------
@@ -325,15 +334,59 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 
 
 # ---------------------------------------------------------------------------
+# Local (in-repo) storage
+# ---------------------------------------------------------------------------
+
+def _dataset_path(source: str) -> Path:
+    return DATA_DIR / f"{source}.json"
+
+
+def save_local(tweets: list[dict], source: str):
+    """Upserts tweets into data/<source>.json, a dict keyed by tweet id.
+
+    Re-fetches of the same tweet just refresh its fields (e.g. updated
+    metrics) in place, so the file grows only with genuinely new tweets
+    instead of a new blob per run.
+    """
+    path = _dataset_path(source)
+    if not tweets:
+        print(f"  No {source} tweets to save locally.")
+        return
+
+    existing: dict[str, dict] = {}
+    if path.exists():
+        existing = json.loads(path.read_text())
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    added = 0
+    for t in tweets:
+        tid = t["id"]
+        if tid not in existing:
+            added += 1
+        first_seen_at = existing.get(tid, {}).get("first_seen_at", now_iso)
+        existing[tid] = {**t, "first_seen_at": first_seen_at, "last_seen_at": now_iso}
+
+    ordered = dict(
+        sorted(
+            existing.items(),
+            key=lambda kv: _parse_twitter_date(kv[1].get("created_at")) or "",
+            reverse=True,
+        )
+    )
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ordered, ensure_ascii=False, indent=2) + "\n")
+    print(f"  Saved locally to data/{path.name} ({added} new, {len(ordered)} total).")
+
+
+# ---------------------------------------------------------------------------
 # Supabase
 # ---------------------------------------------------------------------------
 
-def supabase_client() -> Client:
+def supabase_client() -> Client | None:
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_KEY")
     if not url or not key:
-        print("ERROR: SUPABASE_URL / SUPABASE_KEY required (set them in .env)")
-        sys.exit(1)
+        return None
     return create_client(url, key)
 
 
@@ -485,10 +538,19 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, save_local_enabled: bool, save_supabase_enabled: bool):
     username = os.getenv("TWITTER_USERNAME")
-    sb = supabase_client()
-    print("Supabase: connected.\n")
+
+    sb = None
+    if save_supabase_enabled:
+        sb = supabase_client()
+        if sb is not None:
+            print("Supabase: connected.")
+        else:
+            print("Supabase: no SUPABASE_URL/SUPABASE_KEY set, skipping Supabase sync.")
+    if save_local_enabled:
+        print("Local storage: data/<source>.json")
+    print()
 
     client = await get_client()
 
@@ -515,13 +577,18 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+        if save_local_enabled:
+            save_local(tweets, kind)
+        if sb is not None:
+            push_snapshot(sb, tweets, kind, username)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(
+        description="Fetch tweets and store them locally (data/<source>.json) and/or in Supabase."
+    )
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
@@ -534,8 +601,18 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--no-local",
+        action="store_true",
+        help="Don't save tweets to data/<source>.json in this repo.",
+    )
+    parser.add_argument(
+        "--no-supabase",
+        action="store_true",
+        help="Don't push tweets to Supabase, even if credentials are set.",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, not args.no_local, not args.no_supabase))
 
 
 if __name__ == "__main__":
