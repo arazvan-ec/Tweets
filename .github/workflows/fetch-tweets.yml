@@ -1,0 +1,99 @@
+name: Fetch tweets to repo
+
+# Captures the tweets you'd see (For You + Following, plus your own) and
+# commits them as JSON under data/ so they're versioned in the repo for
+# later reading/analysis. Independent of the Railway Supabase pipeline.
+
+on:
+  workflow_dispatch:
+    inputs:
+      max:
+        description: 'Max tweets per source'
+        required: false
+        default: '100'
+      source:
+        description: 'Which source to fetch'
+        required: false
+        default: 'all_feeds'
+        type: choice
+        options:
+          - all_feeds
+          - for_you
+          - following
+          - mine
+          - all
+  schedule:
+    # Every 6 hours
+    - cron: '0 */6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch-tweets-to-repo
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          # twikit pulls these via Js2Py-3.13 but the resolver sometimes
+          # picks up a different Js2Py; force the right one.
+          pip install Js2Py-3.13
+
+      - name: Restore session cookies
+        env:
+          TWITTER_COOKIES_JSON: ${{ secrets.TWITTER_COOKIES_JSON }}
+        run: |
+          mkdir -p data
+          if [ -n "$TWITTER_COOKIES_JSON" ]; then
+            printf '%s' "$TWITTER_COOKIES_JSON" > data/.cookies.json
+            python -c "import json; json.load(open('data/.cookies.json'))"
+          fi
+
+      - name: Fetch tweets and save to repo
+        env:
+          TWITTER_EMAIL: ${{ secrets.TWITTER_EMAIL }}
+          TWITTER_PASSWORD: ${{ secrets.TWITTER_PASSWORD }}
+          TWITTER_USERNAME: ${{ secrets.TWITTER_USERNAME }}
+        run: |
+          python scripts/fetch_tweets.py \
+            --source "${{ github.event.inputs.source || 'all_feeds' }}" \
+            --max "${{ github.event.inputs.max || '100' }}" \
+            --save-local \
+            --no-supabase
+
+      - name: Commit and push if changes
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --quiet --staged; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: fetch tweets snapshot ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+          for i in 1 2 3; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push failed, pulling and retrying ($i/3)..."
+            git pull --rebase || true
+            sleep $((i * 2))
+          done
+          exit 1

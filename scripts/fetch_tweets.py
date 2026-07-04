@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Fetches tweets from X/Twitter using twikit and stores everything directly in
-Supabase. The only thing that touches local disk is the session cookie file.
+Fetches tweets from X/Twitter using twikit. Can push to Supabase
+(default) and/or save JSON snapshots under data/ for versioning in the
+repo (--save-local).
 """
 
 import argparse
 import asyncio
+import json
 import os
 import re
 import sys
@@ -325,6 +327,53 @@ async def fetch_replies(client: twikit.Client, tweet_id: str, max_replies: int =
 
 
 # ---------------------------------------------------------------------------
+# Local (in-repo) storage
+# ---------------------------------------------------------------------------
+
+def _update_local_index(base_dir: Path, entry: dict):
+    index_path = base_dir / "index.json"
+    try:
+        entries = json.loads(index_path.read_text()) if index_path.exists() else []
+    except Exception:
+        entries = []
+    entries.append(entry)
+    index_path.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n")
+
+
+def save_local_snapshot(tweets: list[dict], source: str, username: str, base_dir: Path) -> Path | None:
+    """Writes a fetched batch to data/<YYYY-MM-DD>/<source>_<timestamp>.json so
+    it's versioned in the repo and can be read, diffed or analyzed later."""
+    if not tweets:
+        print(f"  No {source} tweets to save locally.")
+        return None
+
+    now = datetime.now(timezone.utc)
+    day_dir = base_dir / now.strftime("%Y-%m-%d")
+    day_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"{source}_{now.strftime('%Y%m%dT%H%M%SZ')}.json"
+    path = day_dir / filename
+    path.write_text(json.dumps({
+        "fetched_at": now.isoformat(),
+        "source": source,
+        "username": username,
+        "count": len(tweets),
+        "tweets": tweets,
+    }, ensure_ascii=False, indent=2) + "\n")
+
+    _update_local_index(base_dir, {
+        "file": str(path.relative_to(base_dir)),
+        "fetched_at": now.isoformat(),
+        "source": source,
+        "username": username,
+        "count": len(tweets),
+    })
+
+    print(f"    OK — saved to {path}")
+    return path
+
+
+# ---------------------------------------------------------------------------
 # Supabase
 # ---------------------------------------------------------------------------
 
@@ -485,10 +534,13 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, save_local: bool = False, local_dir: Path = None, push_supabase: bool = True):
     username = os.getenv("TWITTER_USERNAME")
-    sb = supabase_client()
-    print("Supabase: connected.\n")
+
+    sb = None
+    if push_supabase:
+        sb = supabase_client()
+        print("Supabase: connected.\n")
 
     client = await get_client()
 
@@ -515,18 +567,21 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+        if save_local:
+            save_local_snapshot(tweets, kind, username, local_dir)
+        if sb is not None:
+            push_snapshot(sb, tweets, kind, username)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase and/or the repo.")
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
         default="all_feeds",
-        help="Which feed(s) to fetch (default: all_feeds = for_you + following)",
+        help="Which feed(s) to fetch (default: all_feeds = for_you + following, i.e. what you'd see)",
     )
     parser.add_argument(
         "--max",
@@ -534,8 +589,30 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--save-local",
+        action="store_true",
+        help="Also save each fetched batch as JSON under --local-dir (versioned in the repo).",
+    )
+    parser.add_argument(
+        "--local-dir",
+        default="data",
+        help="Directory for local JSON snapshots when --save-local is set (default: data)",
+    )
+    parser.add_argument(
+        "--no-supabase",
+        action="store_true",
+        help="Skip pushing to Supabase (useful when only saving locally).",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    local_dir = Path(__file__).parent.parent / args.local_dir
+    asyncio.run(run(
+        args.source,
+        args.max,
+        save_local=args.save_local,
+        local_dir=local_dir,
+        push_supabase=not args.no_supabase,
+    ))
 
 
 if __name__ == "__main__":
