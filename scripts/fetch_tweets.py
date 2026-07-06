@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Fetches tweets from X/Twitter using twikit and stores everything directly in
-Supabase. The only thing that touches local disk is the session cookie file.
+Fetches tweets from X/Twitter using twikit. Can push to Supabase (--source
+all_feeds/mine/etc, used by the Railway cron) and/or archive tweets as JSONL
+files in the repo itself (--save-local, used by the GitHub Actions archiver).
 """
 
 import argparse
 import asyncio
+import json
 import os
 import re
 import sys
@@ -21,6 +23,9 @@ load_dotenv()
 # Local cookie file (session token, not tweet data). Created on first run from
 # TWITTER_COOKIES_JSON if missing, refreshed by twikit on subsequent runs.
 COOKIES_FILE = Path(__file__).parent.parent / "data" / ".cookies.json"
+
+# Where --save-local archives tweets, as one JSONL file per (source, username).
+LOCAL_ARCHIVE_DIR = Path(__file__).parent.parent / "data" / "tweets"
 
 
 # ---------------------------------------------------------------------------
@@ -482,13 +487,75 @@ def push_snapshot(sb: Client, tweets: list[dict], source: str, username: str):
 
 
 # ---------------------------------------------------------------------------
+# Local repo archive (JSONL, one file per source/username)
+# ---------------------------------------------------------------------------
+
+def _archive_path(source: str, username: str) -> Path:
+    return LOCAL_ARCHIVE_DIR / source / f"{username}.jsonl"
+
+
+def _load_local_archive(path: Path) -> dict:
+    existing = {}
+    if not path.exists():
+        return existing
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if row.get("id"):
+            existing[row["id"]] = row
+    return existing
+
+
+def _tweet_sort_key(row: dict):
+    tid = row.get("id") or ""
+    return int(tid) if tid.isdigit() else 0
+
+
+def save_tweets_locally(tweets: list[dict], source: str, username: str):
+    """Upserts tweets into a JSONL archive in the repo, keyed by tweet id, so
+    every run adds new tweets and refreshes metrics on ones already seen
+    without losing history (first_seen_at is preserved)."""
+    if not tweets:
+        print(f"  No {source} tweets to archive locally.")
+        return
+
+    path = _archive_path(source, username)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    existing = _load_local_archive(path)
+    new_count = sum(1 for t in tweets if t.get("id") and t["id"] not in existing)
+    for t in tweets:
+        if not t.get("id"):
+            continue
+        row = dict(t)
+        row["first_seen_at"] = existing.get(t["id"], {}).get("first_seen_at", now_iso)
+        row["last_seen_at"] = now_iso
+        existing[t["id"]] = row
+
+    ordered = sorted(existing.values(), key=_tweet_sort_key, reverse=True)
+    with path.open("w", encoding="utf-8") as f:
+        for row in ordered:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    print(f"  Archived {source} tweets locally -> {path} ({new_count} new, {len(ordered)} total)")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-async def run(source: str, max_tweets: int):
+async def run(source: str, max_tweets: int, use_supabase: bool, save_local: bool):
     username = os.getenv("TWITTER_USERNAME")
-    sb = supabase_client()
-    print("Supabase: connected.\n")
+    sb = None
+    if use_supabase:
+        sb = supabase_client()
+        print("Supabase: connected.\n")
 
     client = await get_client()
 
@@ -515,13 +582,16 @@ async def run(source: str, max_tweets: int):
             tweets = await fetch_own_tweets(client, username, max_tweets)
         else:
             continue
-        push_snapshot(sb, tweets, kind, username)
+        if use_supabase:
+            push_snapshot(sb, tweets, kind, username)
+        if save_local:
+            save_tweets_locally(tweets, kind, username)
 
     print("\nDone.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase.")
+    parser = argparse.ArgumentParser(description="Fetch tweets and store them in Supabase and/or the repo.")
     parser.add_argument(
         "--source",
         choices=["for_you", "following", "mine", "timeline", "both", "all_feeds", "all"],
@@ -534,8 +604,18 @@ def main():
         default=100,
         help="Max tweets per source (default: 100)",
     )
+    parser.add_argument(
+        "--save-local",
+        action="store_true",
+        help="Also archive fetched tweets as JSONL files under data/tweets/ in the repo",
+    )
+    parser.add_argument(
+        "--no-supabase",
+        action="store_true",
+        help="Skip pushing to Supabase (useful for --save-local-only runs, e.g. the GitHub Actions archiver)",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.source, args.max))
+    asyncio.run(run(args.source, args.max, use_supabase=not args.no_supabase, save_local=args.save_local))
 
 
 if __name__ == "__main__":
